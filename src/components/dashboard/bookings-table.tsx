@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
   MoreHorizontal,
@@ -60,8 +60,8 @@ function BookingActions({ booking }: { booking: Booking }) {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  useState(() => {
-    if (user) {
+  useEffect(() => {
+    if (user && firestore) {
       const userDocRef = doc(firestore, "users", user.uid);
       getDoc(userDocRef).then(docSnap => {
           if (docSnap.exists()) {
@@ -69,7 +69,7 @@ function BookingActions({ booking }: { booking: Booking }) {
           }
       })
     }
-  });
+  }, [user, firestore]);
 
 
   const handleSummarize = async () => {
@@ -182,8 +182,8 @@ export default function BookingsTable({
   const firestore = useFirestore();
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  useState(() => {
-    if (user) {
+  useEffect(() => {
+    if (user && firestore) {
       const userDocRef = doc(firestore, "users", user.uid);
       getDoc(userDocRef).then(docSnap => {
           if (docSnap.exists()) {
@@ -191,7 +191,7 @@ export default function BookingsTable({
           }
       })
     }
-  });
+  }, [user, firestore]);
 
   const filteredBookings =
     userRole === "admin"
