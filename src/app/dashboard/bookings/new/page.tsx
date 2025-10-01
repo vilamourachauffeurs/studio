@@ -71,6 +71,9 @@ export default function NewBookingPage() {
     defaultValues: {
       pax: 1,
       paymentType: "account",
+      clientName: "",
+      partnerId: "",
+      notes: "",
     },
   });
 
