@@ -11,10 +11,7 @@ import {
 } from "@/ai/flows/suggest-driver-for-booking";
 import { BookingStatus } from "./types";
 import { doc, updateDoc } from "firebase/firestore";
-import { initializeFirebase } from "@/firebase";
-
-
-const { firestore } = initializeFirebase();
+import { firestore } from "@/firebase/server";
 
 
 export async function getDriverSuggestion(
