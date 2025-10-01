@@ -147,6 +147,10 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                         >
                         {booking.status.replace("_", " ")}
                     </Badge>
+                     <Button variant="outline" size="sm" onClick={() => setIsChangeStatusOpen(true)}>
+                        <Flag className="mr-2 h-4 w-4"/>
+                        <span>Change Status</span>
+                    </Button>
                 </h1>
                 <p className="text-muted-foreground">
                     Created on {formatTimestamp(booking.createdAt)}
@@ -162,10 +166,6 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setIsChangeStatusOpen(true)}>
-                            <Flag className="mr-2"/>
-                            <span>Change Status</span>
-                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={() => setIsCancelAlertOpen(true)}>
                              <XCircle className="mr-2"/>
                             <span>Cancel Booking</span>
