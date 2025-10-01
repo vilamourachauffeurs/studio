@@ -26,7 +26,8 @@ export type User = {
 export type Booking = {
   id: string;
   clientName?: string;
-  requestedById: string; // User ID of admin or partner
+  createdById: string; // User ID of admin or partner
+  requestedBy?: string; // Name of person requesting booking (e.g. concierge)
   partnerId?: string; // Operator
   partner?: Partner;
   pickupLocation: string;

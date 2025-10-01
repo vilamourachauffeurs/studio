@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Euro, Users, Briefcase, MapPin } from "lucide-react";
+import { CalendarIcon, Euro, Users, Briefcase, MapPin, User, FileSignature } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +38,6 @@ import { addDocumentNonBlocking, useFirestore, useMemoFirebase, useUser } from "
 import { collection, serverTimestamp } from "firebase/firestore";
 import type { Partner } from "@/lib/types";
 import { useRouter } from "next/navigation";
-import { User } from "lucide-react";
 import { useCollection } from "@/firebase";
 
 const bookingFormSchema = z.object({
@@ -49,6 +48,7 @@ const bookingFormSchema = z.object({
   }),
   pax: z.coerce.number().min(1, "At least one passenger is required."),
   clientName: z.string().optional(),
+  requestedBy: z.string().optional(),
   partnerId: z.string().optional(),
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
   paymentType: z.enum(["credit_card", "account", "cash"]),
@@ -75,6 +75,7 @@ export default function NewBookingPage() {
       dropoffLocation: "",
       pax: 1,
       clientName: "",
+      requestedBy: "",
       partnerId: "",
       cost: 0,
       paymentType: "account",
@@ -97,7 +98,7 @@ export default function NewBookingPage() {
       await addDocumentNonBlocking(bookingsCollectionRef, {
           ...data,
           status: "pending_admin",
-          requestedById: user.uid,
+          createdById: user.uid,
           createdAt: serverTimestamp(),
       });
 
@@ -220,6 +221,25 @@ export default function NewBookingPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="requestedBy"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Requested By (Optional)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                            <FileSignature className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input placeholder="e.g., John at reception" {...field} value={field.value ?? ""} className="pl-10"/>
+                        </div>
+                      </FormControl>
+                       <FormDescription>
+                          The person who requested the booking (if different from account).
+                        </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                  <FormField
                   control={form.control}
                   name="clientName"
@@ -229,7 +249,7 @@ export default function NewBookingPage() {
                       <FormControl>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="e.g., John Doe" {...field} value={field.value ?? ""} className="pl-10"/>
+                            <Input placeholder="e.g., Jane Smith" {...field} value={field.value ?? ""} className="pl-10"/>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -280,11 +300,11 @@ export default function NewBookingPage() {
                     </FormItem>
                   )}
                 />
-                 <FormField
+                <FormField
                     control={form.control}
                     name="paymentType"
                     render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="md:col-start-2">
                         <FormLabel>Payment Type</FormLabel>
                          <div className="relative">
                             <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
