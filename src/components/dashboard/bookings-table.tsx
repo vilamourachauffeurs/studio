@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -180,7 +181,7 @@ export default function BookingsTable({
     userRole === "admin"
       ? bookings
       : bookings.filter((b) => {
-          if (userRole === "partner") return b.createdById === user?.uid;
+          if (userRole === "partner") return b.requestedById === user?.uid;
           if (userRole === "driver") return b.driverId === user?.uid;
           return false;
         });
@@ -218,10 +219,7 @@ export default function BookingsTable({
           {filteredBookings.map((booking) => (
             <TableRow key={booking.id}>
               <TableCell>
-                <div className="font-medium">{booking.client?.name || 'N/A'}</div>
-                <div className="text-sm text-muted-foreground hidden md:inline">
-                  {booking.client?.company}
-                </div>
+                <div className="font-medium">{booking.clientName || 'N/A'}</div>
               </TableCell>
               <TableCell className={cn(isDashboard && "hidden md:table-cell")}>{booking.pickupLocation}</TableCell>
               <TableCell className={cn(isDashboard && "hidden lg:table-cell")}>

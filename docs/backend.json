@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -68,9 +69,9 @@
           "type": "number",
           "description": "The number of passengers."
         },
-        "clientId": {
+        "clientName": {
           "type": "string",
-          "description": "The ID of the client for whom the booking is made."
+          "description": "The name of the client for whom the booking is made."
         },
         "requestedById": {
           "type": "string",
@@ -127,7 +128,6 @@
         "pickupLocation",
         "dropoffLocation",
         "pax",
-        "clientId",
         "requestedById",
         "status",
         "cost",

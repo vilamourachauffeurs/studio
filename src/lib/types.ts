@@ -1,3 +1,4 @@
+
 import { Timestamp } from "firebase/firestore";
 
 export type UserRole = "admin" | "partner" | "driver";
@@ -24,8 +25,7 @@ export type User = {
 
 export type Booking = {
   id: string;
-  clientId: string;
-  client?: Client;
+  clientName?: string;
   requestedById: string; // User ID of admin or partner
   partnerId?: string; // Operator
   partner?: Partner;

@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Car, DollarSign, Users, Briefcase, MapPin, Clock, Hash } from "lucide-react";
+import { CalendarIcon, Car, DollarSign, Users, Briefcase, MapPin, Clock, Hash, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,7 +46,7 @@ const bookingFormSchema = z.object({
     required_error: "A date and time is required.",
   }),
   pax: z.coerce.number().min(1, "At least one passenger is required."),
-  clientId: z.string().min(1, "A client is required."),
+  clientName: z.string().optional(),
   partnerId: z.string().optional(),
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
   paymentType: z.enum(["credit_card", "account", "cash"]),
@@ -60,9 +60,6 @@ export default function NewBookingPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const router = useRouter();
-
-  const clientsCollectionRef = useMemoFirebase(() => collection(firestore, 'clients'), [firestore]);
-  const { data: clients } = useCollection<Client>(clientsCollectionRef);
 
   const partnersCollectionRef = useMemoFirebase(() => collection(firestore, 'partners'), [firestore]);
   const { data: partners } = useCollection<Partner>(partnersCollectionRef);
@@ -88,6 +85,7 @@ export default function NewBookingPage() {
     }
 
     try {
+      // @ts-ignore
       await addDocumentNonBlocking(bookingsCollectionRef, {
           ...data,
           status: "pending_admin",
@@ -215,29 +213,20 @@ export default function NewBookingPage() {
                   )}
                 />
                  <FormField
-                    control={form.control}
-                    name="clientId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Client</FormLabel>
-                         <div className="relative">
-                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger className="pl-10">
-                                    <SelectValue placeholder="Select a client" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                {clients?.map(client => (
-                                    <SelectItem key={client.id} value={client.id}>{client.name} - {client.company}</SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                         </div>
-                        <FormMessage />
-                        </FormItem>
-                    )}
+                  control={form.control}
+                  name="clientName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Client Name (Optional)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input placeholder="e.g., John Doe" {...field} className="pl-10"/>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                     control={form.control}
@@ -336,5 +325,3 @@ export default function NewBookingPage() {
     </div>
   );
 }
-
-    
