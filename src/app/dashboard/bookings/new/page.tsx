@@ -69,10 +69,14 @@ export default function NewBookingPage() {
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
+      pickupLocation: "",
+      dropoffLocation: "",
+      pickupTime: undefined,
       pax: 1,
-      paymentType: "account",
       clientName: "",
       partnerId: "",
+      cost: 0,
+      paymentType: "account",
       notes: "",
     },
   });
