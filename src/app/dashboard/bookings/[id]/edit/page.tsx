@@ -80,15 +80,27 @@ export default function EditBookingPage() {
   
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
+    defaultValues: {
+        pickupLocation: "",
+        dropoffLocation: "",
+        pax: 1,
+        clientName: "",
+        requestedBy: "",
+        partnerId: "",
+        cost: 0,
+        paymentType: "account",
+        notes: "",
+        pickupTime: undefined,
+    }
   });
 
   useEffect(() => {
     if (booking) {
-        let pickupTimeDate = new Date();
-        if (booking.pickupTime instanceof Timestamp) {
-            pickupTimeDate = booking.pickupTime.toDate();
-        } else if (booking.pickupTime instanceof Date) {
-            pickupTimeDate = booking.pickupTime;
+        let pickupTimeDate: Date | undefined = undefined;
+        if (booking.pickupTime) {
+            pickupTimeDate = booking.pickupTime instanceof Timestamp 
+                ? booking.pickupTime.toDate() 
+                : new Date(booking.pickupTime);
         }
 
       form.reset({
@@ -234,8 +246,9 @@ export default function EditBookingPage() {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={(date) => {
-                                    if (!date || !field.value) return;
-                                    const newDate = new Date(field.value.getTime());
+                                    const currentValue = field.value || new Date();
+                                    if (!date) return;
+                                    const newDate = new Date(currentValue.getTime());
                                     newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
                                     field.onChange(newDate);
                                 }}
@@ -248,9 +261,9 @@ export default function EditBookingPage() {
                                         {hours.map(hour => (
                                             <Button
                                                 key={hour}
-                                                variant={format(field.value, "HH") === hour ? "default" : "ghost"}
+                                                variant={field.value && format(field.value, "HH") === hour ? "default" : "ghost"}
                                                 className="w-full justify-center"
-                                                onClick={() => field.onChange(setHours(field.value, parseInt(hour)))}
+                                                onClick={() => field.onChange(setHours(field.value || new Date(), parseInt(hour)))}
                                             >
                                                 {hour}
                                             </Button>
@@ -262,9 +275,9 @@ export default function EditBookingPage() {
                                         {minutes.map(minute => (
                                             <Button
                                                 key={minute}
-                                                variant={format(field.value, "mm") === minute ? "default" : "ghost"}
+                                                variant={field.value && format(field.value, "mm") === minute ? "default" : "ghost"}
                                                 className="w-full justify-center"
-                                                onClick={() => field.onChange(setMinutes(field.value, parseInt(minute)))}
+                                                onClick={() => field.onChange(setMinutes(field.value || new Date(), parseInt(minute)))}
                                             >
                                                 {minute}
                                             </Button>
@@ -426,3 +439,5 @@ export default function EditBookingPage() {
     </div>
   );
 }
+
+    
