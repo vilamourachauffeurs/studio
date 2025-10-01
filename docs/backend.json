@@ -41,129 +41,45 @@
         "phone",
         "role"
       ]
-    }
-  },
-  "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
-  },
-  "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user information, including role (admin, partner, driver) and relatedId. The role is stored within the document enabling rules to be evaluated without needing to access another document.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique ID of the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/bookings/{bookingId}",
-        "definition": {
-          "entityName": "bookings",
-          "schema": {
-            "$ref": "#/backend/entities/bookings"
-          },
-          "description": "Stores booking information. Includes denormalized 'createdById', and 'createdByRole' fields for authorization independence, allowing verification of booking creation permissions without additional reads. Includes denormalized 'driverId' to easily authorize which bookings the driver can access.",
-          "params": [
-            {
-              "name": "bookingId",
-              "description": "The unique ID of the booking."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/drivers/{driverId}",
-        "definition": {
-          "entityName": "drivers",
-          "schema": {
-            "$ref": "#/backend/entities/drivers"
-          },
-          "description": "Stores driver information, including status and performance metrics.",
-          "params": [
-            {
-              "name": "driverId",
-              "description": "The unique ID of the driver."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/clients/{clientId}",
-        "definition": {
-          "entityName": "clients",
-          "schema": {
-            "$ref": "#/backend/entities/clients"
-          },
-          "description": "Stores client information.",
-          "params": [
-            {
-              "name": "clientId",
-              "description": "The unique ID of the client."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/partners/{partnerId}",
-        "definition": {
-          "entityName": "partners",
-          "schema": {
-            "$ref": "#/backend/entities/partners"
-          },
-          "description": "Stores partner information, including commission rate and booking statistics.",
-          "params": [
-            {
-              "name": "partnerId",
-              "description": "The unique ID of the partner."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/notifications/{notificationId}",
-        "definition": {
-          "entityName": "notifications",
-          "schema": {
-            "$ref": "#/backend/entities/notifications"
-          },
-          "description": "Stores notifications for admins and drivers regarding booking requests and job assignments.",
-          "params": [
-            {
-              "name": "notificationId",
-              "description": "The unique ID of the notification."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/reports/{reportId}",
-        "definition": {
-          "entityName": "reports",
-          "schema": {
-            "$ref": "#/backend/entities/reports"
-          },
-          "description": "Stores report metadata, including filters and the storage URL of the generated report.",
-          "params": [
-            {
-              "name": "reportId",
-              "description": "The unique ID of the report."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed to provide a secure and scalable foundation for the Chauffeur Pro application. It adheres to the principles of Authorization Independence, Structural Segregation, and Access Modeling. Authorization Independence is achieved by denormalizing authorization-related data (like role and related IDs) within documents, removing the need for `get()` calls in security rules. This allows atomic operations and simplifies rule evaluation. Structural Segregation is applied by separating data with differing access requirements into distinct collections (e.g., `users`, `bookings`, `drivers`). Access Modeling follows a consistent pattern: path-based ownership for user-specific data (e.g., `/users/{userId}`) and membership maps where collaboration is needed.\n\n**Authorization Independence (Denormalization):**\n\n*   The `bookings` collection includes `createdById` and `createdByRole`, enabling rules to verify booking creation permissions without reading the user document.\n*   The `bookings` collection includes `driverId`, enabling drivers to only access bookings assigned to them, without needing to access another document to verify the assignment.\n\n**QAPs (Query Authorization Patterns):**\n\n*   Partners can list only their own bookings by querying `bookings` where `createdById == request.auth.uid` and `createdByRole == 'partner'`. The `createdByRole` field enables secure filtering.\n*   Drivers can list only assigned bookings by querying `bookings` where `driverId == request.auth.uid`. This ensures drivers can only see bookings assigned to them.\n*   Admins can list all bookings; security rules ensure that only admins have full access.\n\n**Role Based Access Control (DBAC):**\n\n*   Users roles are stored within their `/users/{uid}` document. This ensures that the user role is part of the data which simplifies rules evaluation.\n\n**Overall Structure:**\n\nThe structure prioritizes clear data ownership and access control. User-owned data is nested under `/users/{userId}`. Collaborative data uses membership maps within documents to manage permissions. Global roles are managed through the content of the `/users/{uid}` documents. Segregation of data types into separate collections ensures that rules remain simple and efficient."
-  }
-}
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Represents a single booking in the Chauffeur Pro system.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the booking."
+        },
+        "pickupTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time for the pickup."
+        },
+        "pickupLocation": {
+          "type": "string",
+          "description": "The pickup location address."
+        },
+        "dropoffLocation": {
+          "type": "string",
+          "description": "The drop-off location address."
+        },
+        "pax": {
+          "type": "number",
+          "description": "The number of passengers."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "The ID of the client for whom the booking is made."
+        },
+        "requestedById": {
+          "type": "string",
+          "description": "The ID of the user who requested the booking (an admin or partner)."
+        },
+        "partnerId": {
+          "type": "string",
+          "description": "The ID of the partner (operator) if applicable."
+        },
+        "driverId": {
+          "type": "string",
+...
