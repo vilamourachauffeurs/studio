@@ -1,4 +1,5 @@
 
+
 import { Timestamp } from "firebase/firestore";
 
 export type UserRole = "admin" | "partner" | "driver";
@@ -98,3 +99,4 @@ export type Notification = {
   sentAt: Date;
   message: string;
 };
+

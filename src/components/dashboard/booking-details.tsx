@@ -1,9 +1,9 @@
 
 "use client";
 
+import { useState } from "react";
 import {
   Car,
-  ChevronDown,
   Clock,
   Euro,
   FilePen,
@@ -15,6 +15,7 @@ import {
   User,
   Users,
   XCircle,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,10 +31,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge";
 import type { Booking, BookingStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
+import { AssignDriverDialog } from "./assign-driver-dialog";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { updateBookingStatus } from "@/lib/actions";
+import { ChangeStatusDialog } from "./change-status-dialog";
 
 const statusStyles: Record<BookingStatus, string> = {
     draft: "bg-gray-200 text-gray-800",
@@ -77,8 +93,50 @@ function InfoRow({
 }
 
 export default function BookingDetails({ booking }: { booking: Booking }) {
+    const router = useRouter();
+    const { toast } = useToast();
+    const [isAssignDriverOpen, setIsAssignDriverOpen] = useState(false);
+    const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
+    const [isChangeStatusOpen, setIsChangeStatusOpen] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
+
+
+    const handleCancelBooking = async () => {
+        setIsCancelling(true);
+        const result = await updateBookingStatus(booking.id, "cancelled");
+        setIsCancelling(false);
+        if (result.success) {
+            toast({ title: "Booking Cancelled", description: `Booking #${booking.id.substring(0,7)} has been cancelled.`});
+            setIsCancelAlertOpen(false);
+            router.refresh(); // Re-fetches data on the page
+        } else {
+            toast({ title: "Error", description: result.error, variant: "destructive" });
+        }
+    }
+
+
   return (
     <div className="space-y-6">
+        <AssignDriverDialog booking={booking} open={isAssignDriverOpen} onOpenChange={setIsAssignDriverOpen} />
+        <ChangeStatusDialog booking={booking} open={isChangeStatusOpen} onOpenChange={setIsChangeStatusOpen} />
+         <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently cancel the booking.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Dismiss</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCancelBooking} disabled={isCancelling}>
+                    {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Continue
+                </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
         <div className="flex items-start justify-between">
             <div>
                 <h1 className="text-3xl font-headline flex items-center gap-4">
@@ -95,8 +153,8 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                 </p>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="outline"><FilePen className="mr-2" /> Edit Booking</Button>
-                <Button><Car className="mr-2"/> Assign Driver</Button>
+                <Button variant="outline" onClick={() => router.push(`/dashboard/bookings/${booking.id}/edit`)}><FilePen className="mr-2" /> Edit Booking</Button>
+                <Button onClick={() => setIsAssignDriverOpen(true)}><Car className="mr-2"/> Assign Driver</Button>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="icon">
@@ -104,11 +162,11 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setIsChangeStatusOpen(true)}>
                             <Flag className="mr-2"/>
                             <span>Change Status</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem className="text-destructive" onClick={() => setIsCancelAlertOpen(true)}>
                              <XCircle className="mr-2"/>
                             <span>Cancel Booking</span>
                         </DropdownMenuItem>
