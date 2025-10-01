@@ -1,3 +1,4 @@
+
 'use client';
     
 import {
@@ -37,7 +38,7 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
  * Returns the Promise for the new doc ref, but typically not awaited by caller.
  */
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
-  const promise = addDoc(colRef, data)
+  const promise = addDoc(col_ref, data)
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
@@ -87,3 +88,5 @@ export function deleteDocumentNonBlocking(docRef: DocumentReference) {
       )
     });
 }
+
+    

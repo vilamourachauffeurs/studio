@@ -1,3 +1,4 @@
+
 "use client";
 
 import { DollarSign, Book } from "lucide-react";
@@ -44,7 +45,9 @@ export default function PartnerView() {
                 <h2 className="text-3xl font-headline">Welcome, Partner!</h2>
                 <p className="text-muted-foreground">Here's what's happening with your bookings.</p>
             </div>
-            <Button>Create New Booking</Button>
+            <Button asChild>
+                <Link href="/dashboard/bookings/new">Create New Booking</Link>
+            </Button>
         </div>
       <div className="grid gap-4 md:grid-cols-2">
         <StatsCard
@@ -81,3 +84,5 @@ export default function PartnerView() {
     </div>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy } from "firebase/firestore";
 import type { Booking } from "@/lib/types";
+import Link from "next/link";
 
 export default function BookingsPage() {
   const firestore = useFirestore();
@@ -22,7 +24,9 @@ export default function BookingsPage() {
                 Manage all company bookings from here.
             </p>
         </div>
-        <Button>Create New Booking</Button>
+        <Button asChild>
+            <Link href="/dashboard/bookings/new">Create New Booking</Link>
+        </Button>
       </div>
       <Card className="shadow-lg">
           <CardHeader>
@@ -36,3 +40,5 @@ export default function BookingsPage() {
     </div>
   );
 }
+
+    
