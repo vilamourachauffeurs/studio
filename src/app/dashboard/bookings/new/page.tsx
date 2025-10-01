@@ -34,8 +34,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, serverTimestamp } from "firebase/firestore";
+import { addDocumentNonBlocking, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
+import { collection, serverTimestamp, doc } from "firebase/firestore";
 import type { Partner } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useCollection } from "@/firebase";
@@ -68,6 +68,9 @@ export default function NewBookingPage() {
   const { user } = useUser();
   const router = useRouter();
 
+  const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
+  const { data: userProfile } = useDoc(userDocRef);
+
   const partnersCollectionRef = useMemoFirebase(() => collection(firestore, 'partners'), [firestore]);
   const { data: partners } = useCollection<Partner>(partnersCollectionRef);
   
@@ -90,7 +93,7 @@ export default function NewBookingPage() {
   });
 
   async function onSubmit(data: BookingFormValues) {
-    if (!user) {
+    if (!user || !userProfile) {
         toast({
             title: "Error",
             description: "You must be logged in to create a booking.",
@@ -99,17 +102,21 @@ export default function NewBookingPage() {
         return;
     }
 
+    // @ts-ignore
+    const isAdmin = userProfile.role === 'admin';
+    const bookingStatus = isAdmin ? 'approved' : 'pending_admin';
+
     try {
       addDocumentNonBlocking(bookingsCollectionRef, {
           ...data,
-          status: "pending_admin",
+          status: bookingStatus,
           createdById: user.uid,
           createdAt: serverTimestamp(),
       });
 
       toast({
         title: "Booking Created!",
-        description: "The new booking has been saved and is pending approval.",
+        description: `The new booking has been saved with status: ${bookingStatus.replace('_', ' ')}.`,
       });
       router.push("/dashboard/bookings");
     } catch (error) {
@@ -393,6 +400,3 @@ export default function NewBookingPage() {
     </div>
   );
 }
-
-    
-    
