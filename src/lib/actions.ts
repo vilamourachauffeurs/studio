@@ -1,3 +1,4 @@
+
 "use server";
 
 import {
@@ -10,21 +11,21 @@ import {
 } from "@/ai/flows/suggest-driver-for-booking";
 import { BookingStatus } from "./types";
 import { doc, updateDoc } from "firebase/firestore";
-import { getSdks } from "@/firebase";
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { firebaseConfig } from "@/firebase/config";
 import { getFirestore } from "firebase/firestore";
 
 // This is a temporary workaround to get an initialized firestore instance on the server.
 // In a real app, you would likely have a more robust server-side initialization.
-const getApp = () => {
-    try {
-        return initializeApp();
-    } catch {
-        return initializeApp(firebaseConfig);
+const getFirestoreInstance = () => {
+    if (!getApps().length) {
+        const app = initializeApp(firebaseConfig);
+        return getFirestore(app);
     }
-}
-const firestore = getFirestore(getApp());
+    return getFirestore(getApp());
+};
+
+const firestore = getFirestoreInstance();
 
 
 export async function getDriverSuggestion(
