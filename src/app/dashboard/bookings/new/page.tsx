@@ -34,11 +34,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection } from "firebase/firestore";
-import type { Client, Partner, User } from "@/lib/types";
+import { addDocumentNonBlocking, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { collection, serverTimestamp } from "firebase/firestore";
+import type { Partner } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { User } from "lucide-react";
+import { useCollection } from "@/firebase";
 
 const bookingFormSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required."),
@@ -72,13 +73,13 @@ export default function NewBookingPage() {
     defaultValues: {
       pickupLocation: "",
       dropoffLocation: "",
-      pickupTime: new Date(),
       pax: 1,
       clientName: "",
       partnerId: "",
       cost: 0,
       paymentType: "account",
       notes: "",
+      pickupTime: new Date(),
     },
   });
 
@@ -93,12 +94,11 @@ export default function NewBookingPage() {
     }
 
     try {
-      // @ts-ignore
       await addDocumentNonBlocking(bookingsCollectionRef, {
           ...data,
           status: "pending_admin",
           requestedById: user.uid,
-          createdAt: new Date(),
+          createdAt: serverTimestamp(),
       });
 
       toast({
@@ -333,5 +333,3 @@ export default function NewBookingPage() {
     </div>
   );
 }
-
-    
