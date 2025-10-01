@@ -1,14 +1,26 @@
+"use client";
+
 import { DollarSign, Users, Book, Car } from "lucide-react";
 import { StatsCard } from "./stats-card";
 import { BookingsChart } from "./bookings-chart";
 import BookingsTable from "./bookings-table";
-import { bookings } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import type { Booking } from "@/lib/types";
+
 
 export default function AdminView() {
-  const recentBookings = bookings.slice(0, 5);
+  const firestore = useFirestore();
+  const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
+
+  const recentBookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, orderBy('createdAt', 'desc'), limit(5)), [bookingsCollectionRef]);
+  const { data: recentBookings } = useCollection<Booking>(recentBookingsQuery);
+
+  const pendingBookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, where('status', '==', 'pending_admin')), [bookingsCollectionRef]);
+  const { data: pendingBookings } = useCollection<Booking>(pendingBookingsQuery);
 
   return (
     <div className="space-y-6">
@@ -53,7 +65,7 @@ export default function AdminView() {
                 <div>
                     <CardTitle className="font-headline">Recent Bookings</CardTitle>
                     <CardDescription>
-                        You have {bookings.filter(b => b.status === 'pending_admin').length} pending bookings.
+                        You have {pendingBookings?.length || 0} pending bookings.
                     </CardDescription>
                 </div>
                 <Button asChild size="sm">
@@ -62,7 +74,7 @@ export default function AdminView() {
             </div>
           </CardHeader>
           <CardContent>
-            <BookingsTable bookings={recentBookings} isDashboard={true} />
+            <BookingsTable bookings={recentBookings || []} isDashboard={true} />
           </CardContent>
         </Card>
       </div>

@@ -1,18 +1,41 @@
+"use client";
+
 import { DollarSign, Book } from "lucide-react";
 import { StatsCard } from "./stats-card";
 import BookingsTable from "./bookings-table";
-import { bookings } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { useUser } from "@/firebase";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import type { Booking } from "@/lib/types";
 
 export default function PartnerView() {
   const { user } = useUser();
-  const partnerBookings = bookings.filter(
-    (b) => b.createdById === user?.uid
-  );
-  const recentBookings = partnerBookings.slice(0, 5);
+  const firestore = useFirestore();
+
+  const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
+
+  const partnerBookingsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(bookingsCollectionRef, where('createdById', '==', user.uid));
+  }, [bookingsCollectionRef, user]);
+
+  const { data: partnerBookings } = useCollection<Booking>(partnerBookingsQuery);
+
+  const recentBookingsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(
+      bookingsCollectionRef,
+      where('createdById', '==', user.uid),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
+  }, [bookingsCollectionRef, user]);
+
+  const { data: recentBookings } = useCollection<Booking>(recentBookingsQuery);
+
+  const pendingBookings = partnerBookings?.filter(b => b.status === 'pending_admin') || [];
 
   return (
     <div className="space-y-6">
@@ -26,7 +49,7 @@ export default function PartnerView() {
       <div className="grid gap-4 md:grid-cols-2">
         <StatsCard
           title="Total Bookings"
-          value={partnerBookings.length.toString()}
+          value={partnerBookings?.length.toString() || '0'}
           description="All time"
           icon={<Book className="h-4 w-4 text-muted-foreground" />}
         />
@@ -43,7 +66,7 @@ export default function PartnerView() {
             <div>
                 <CardTitle className="font-headline">Your Recent Bookings</CardTitle>
                 <CardDescription>
-                    {partnerBookings.filter(b => b.status === 'pending_admin').length} of your bookings are pending approval.
+                    {pendingBookings.length} of your bookings are pending approval.
                 </CardDescription>
             </div>
             <Button asChild size="sm">
@@ -52,7 +75,7 @@ export default function PartnerView() {
         </div>
         </CardHeader>
         <CardContent>
-          <BookingsTable bookings={recentBookings} isDashboard={true} />
+          <BookingsTable bookings={recentBookings || []} isDashboard={true} />
         </CardContent>
       </Card>
     </div>

@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type UserRole = "admin" | "partner" | "driver";
 
 export type BookingStatus =
@@ -26,13 +28,13 @@ export type Booking = {
   partner?: Partner;
   pickupLocation: string;
   dropoffLocation:string;
-  pickupTime: Date;
+  pickupTime: Timestamp | Date;
   status: BookingStatus;
   driverId?: string;
   driver?: Driver;
   createdByRole: UserRole;
   createdById: string;
-  createdAt: Date;
+  createdAt: Timestamp | Date;
   notes: string;
   price: number;
   commissionPartner: number;

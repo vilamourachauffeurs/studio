@@ -1,9 +1,18 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import BookingsTable from "@/components/dashboard/bookings-table";
-import { bookings } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy } from "firebase/firestore";
+import type { Booking } from "@/lib/types";
 
 export default function BookingsPage() {
+  const firestore = useFirestore();
+  const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
+  const bookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, orderBy('pickupTime', 'desc')), [bookingsCollectionRef]);
+  const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -21,7 +30,7 @@ export default function BookingsPage() {
               <CardDescription>A list of all bookings in the system.</CardDescription>
           </CardHeader>
           <CardContent>
-             <BookingsTable bookings={bookings} />
+             {isLoading ? <p>Loading bookings...</p> : <BookingsTable bookings={bookings || []} />}
           </CardContent>
       </Card>
     </div>

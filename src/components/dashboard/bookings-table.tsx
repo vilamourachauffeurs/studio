@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
 import {
   MoreHorizontal,
   CheckCircle,
@@ -30,15 +29,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useUser } from "@/firebase";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import type { Booking, BookingStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AssignDriverDialog } from "./assign-driver-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getNotesSummary } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { doc, getDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { doc } from "firebase/firestore";
 
 const statusStyles: Record<BookingStatus, string> = {
   draft: "bg-gray-200 text-gray-800",
@@ -58,19 +56,11 @@ function BookingActions({ booking }: { booking: Booking }) {
   const { toast } = useToast();
   const [summary, setSummary] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user && firestore) {
-      const userDocRef = doc(firestore, "users", user.uid);
-      getDoc(userDocRef).then(docSnap => {
-          if (docSnap.exists()) {
-              setUserRole(docSnap.data().role);
-          }
-      })
-    }
-  }, [user, firestore]);
+  const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
+  const { data: userProfile } = useDoc(userDocRef);
 
+  const userRole = userProfile ? (userProfile as any).role : null;
 
   const handleSummarize = async () => {
     setIsSummarizing(true);
@@ -180,18 +170,11 @@ export default function BookingsTable({
 }) {
   const { user } = useUser();
   const firestore = useFirestore();
-  const [userRole, setUserRole] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user && firestore) {
-      const userDocRef = doc(firestore, "users", user.uid);
-      getDoc(userDocRef).then(docSnap => {
-          if (docSnap.exists()) {
-              setUserRole(docSnap.data().role);
-          }
-      })
-    }
-  }, [user, firestore]);
+  const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
+  const { data: userProfile } = useDoc(userDocRef);
+
+  const userRole = userProfile ? (userProfile as any).role : null;
 
   const filteredBookings =
     userRole === "admin"
@@ -205,6 +188,16 @@ export default function BookingsTable({
   if (filteredBookings.length === 0) {
     return <div className="text-center text-muted-foreground py-8">No bookings found.</div>
   }
+  
+  const formatTimestamp = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    // Firestore timestamps can be objects with seconds and nanoseconds
+    if (timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000).toLocaleString();
+    }
+    // Or they might already be Date objects if transformed
+    return new Date(timestamp).toLocaleString();
+  };
 
   return (
     <div className="w-full">
@@ -225,14 +218,14 @@ export default function BookingsTable({
           {filteredBookings.map((booking) => (
             <TableRow key={booking.id}>
               <TableCell>
-                <div className="font-medium">{booking.client?.name}</div>
+                <div className="font-medium">{booking.client?.name || 'N/A'}</div>
                 <div className="text-sm text-muted-foreground hidden md:inline">
                   {booking.client?.company}
                 </div>
               </TableCell>
               <TableCell className={cn(isDashboard && "hidden md:table-cell")}>{booking.pickupLocation}</TableCell>
               <TableCell className={cn(isDashboard && "hidden lg:table-cell")}>
-                {format(booking.pickupTime, "EEE, MMM d, yyyy @ h:mm a")}
+                {formatTimestamp(booking.pickupTime)}
               </TableCell>
               {!isDashboard && (
                 <TableCell>{booking.driver?.name || "Unassigned"}</TableCell>
