@@ -57,6 +57,21 @@ const bookingFormSchema = z.object({
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
+// Helper to generate time slots
+const createTimeSlots = () => {
+    const slots = [];
+    for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m += 15) {
+            const hour = h.toString().padStart(2, '0');
+            const minute = m.toString().padStart(2, '0');
+            slots.push(`${hour}:${minute}`);
+        }
+    }
+    return slots;
+};
+const timeSlots = createTimeSlots();
+
+
 export default function NewBookingPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -95,7 +110,7 @@ export default function NewBookingPage() {
     }
 
     try {
-      await addDocumentNonBlocking(bookingsCollectionRef, {
+      addDocumentNonBlocking(bookingsCollectionRef, {
           ...data,
           status: "pending_admin",
           createdById: user.uid,
@@ -179,16 +194,17 @@ export default function NewBookingPage() {
                                 <Button
                                 variant={"outline"}
                                 className={cn(
-                                    "w-full pl-3 text-left font-normal",
+                                    "w-full justify-start text-left font-normal",
                                     !field.value && "text-muted-foreground"
                                 )}
                                 >
+                                <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
                                 {field.value ? (
                                     format(field.value, "PPP")
                                 ) : (
                                     <span>Pick a date</span>
                                 )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                
                                 </Button>
                             </FormControl>
                             </PopoverTrigger>
@@ -198,7 +214,7 @@ export default function NewBookingPage() {
                                 selected={field.value}
                                 onSelect={(date) => {
                                     if (!date) return;
-                                    const newDate = new Date(field.value);
+                                    const newDate = new Date(field.value.getTime());
                                     newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
                                     field.onChange(newDate);
                                 }}
@@ -208,34 +224,25 @@ export default function NewBookingPage() {
                             </PopoverContent>
                         </Popover>
                         <Select
-                            value={field.value.getHours().toString()}
-                            onValueChange={(value) => field.onChange(setHours(field.value, parseInt(value)))}
+                            value={format(field.value, "HH:mm")}
+                            onValueChange={(value) => {
+                                const [hours, minutes] = value.split(':').map(Number);
+                                const newDate = setMinutes(setHours(field.value, hours), minutes);
+                                field.onChange(newDate);
+                            }}
                         >
-                            <SelectTrigger className="w-[80px]">
+                            <SelectTrigger className="w-[120px]">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(hour => (
-                                    <SelectItem key={hour} value={hour}>{hour}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={field.value.getMinutes().toString()}
-                            onValueChange={(value) => field.onChange(setMinutes(field.value, parseInt(value)))}
-                        >
-                            <SelectTrigger className="w-[80px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {['00', '15', '30', '45'].map(min => (
-                                    <SelectItem key={min} value={min}>{min}</SelectItem>
+                                {timeSlots.map(time => (
+                                    <SelectItem key={time} value={time}>{time}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                       </div>
                        <FormDescription>
-                          Current time: {format(field.value, "HH:mm")}
+                          Selected: {format(field.value, "PPP 'at' HH:mm")}
                         </FormDescription>
                       <FormMessage />
                     </FormItem>
