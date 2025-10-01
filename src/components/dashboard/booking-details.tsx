@@ -52,14 +52,14 @@ import { updateBookingStatus } from "@/lib/actions";
 import { ChangeStatusDialog } from "./change-status-dialog";
 
 const statusStyles: Record<BookingStatus, string> = {
-    draft: "bg-gray-200 text-gray-800",
-    pending_admin: "bg-yellow-200 text-yellow-800",
-    approved: "bg-blue-200 text-blue-800",
-    assigned: "bg-purple-200 text-purple-800",
-    confirmed: "bg-green-200 text-green-800",
-    in_progress: "bg-indigo-200 text-indigo-800",
-    completed: "bg-primary/20 text-primary",
-    cancelled: "bg-red-200 text-red-800",
+    draft: "border-gray-300 bg-gray-200 text-gray-800",
+    pending_admin: "border-yellow-300 bg-yellow-200 text-yellow-800",
+    approved: "border-blue-300 bg-blue-200 text-blue-800",
+    assigned: "border-purple-300 bg-purple-200 text-purple-800",
+    confirmed: "border-green-300 bg-green-200 text-green-800",
+    in_progress: "border-indigo-300 bg-indigo-200 text-indigo-800",
+    completed: "border-primary/30 bg-primary/20 text-primary",
+    cancelled: "border-red-300 bg-red-200 text-red-800",
 };
 
 const formatTimestamp = (timestamp: any) => {
@@ -141,16 +141,18 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
             <div>
                 <h1 className="text-3xl font-headline flex items-center gap-4">
                     <span>Booking #{booking.id.substring(0, 7)}</span>
-                     <Badge
-                        className={cn("capitalize text-base", statusStyles[booking.status])}
-                        variant="outline"
+                     <div className={cn("flex items-center gap-2 rounded-full border pl-3 pr-1.5 py-1 text-base", statusStyles[booking.status])}>
+                        <span className="capitalize font-medium">{booking.status.replace("_", " ")}</span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-full hover:bg-black/10"
+                            onClick={() => setIsChangeStatusOpen(true)}
                         >
-                        {booking.status.replace("_", " ")}
-                    </Badge>
-                     <Button variant="outline" size="sm" onClick={() => setIsChangeStatusOpen(true)}>
-                        <Flag className="mr-2 h-4 w-4"/>
-                        <span>Change Status</span>
-                    </Button>
+                            <Flag className="h-4 w-4" />
+                            <span className="sr-only">Change Status</span>
+                        </Button>
+                     </div>
                 </h1>
                 <p className="text-muted-foreground">
                     Created on {formatTimestamp(booking.createdAt)}
