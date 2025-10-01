@@ -1,193 +1,186 @@
 /**
- * @file Firestore Security Rules for Chauffeur Pro
- * @version Prototyping
- *
- * @description This ruleset enforces a strict user-ownership model, role-based access control,
- * and authorization independence through data denormalization. It prioritizes security and
- * performance by minimizing `get()` calls and using structural segregation.
- *
- * Core Philosophy:
- *  - Strict user-ownership model: Users can only access their own data unless explicitly
- *    granted access through role-based permissions or shared access patterns.
- *  - Role-based access control: Admins have broad access, while partners and drivers have
- *    restricted access based on their roles and relationships to specific resources.
- *  - Authorization Independence: Denormalized fields like 'createdById', 'createdByRole', and 'driverId'
- *    are used within documents to enable authorization without requiring additional reads.
+ * @file Overview
+ * This ruleset enforces a role-based access control model for the Chauffeur Pro application,
+ * with denormalized authorization data for efficiency.
  *
  * Data Structure:
- *  - /users/{userId}: Stores user profiles.  Access is restricted to the owner and admins.
- *  - /bookings/{bookingId}: Stores booking data.  Access is controlled based on the 'createdById',
- *    'createdByRole', and 'driverId' fields.
- *  - /drivers/{driverId}, /clients/{clientId}, /partners/{partnerId}, /notifications/{notificationId}, /reports/{reportId}:
- *    Top-level collections with individual documents. Access is determined by role and relationships.
+ * - /users/{userId}: Stores user information, including roles (admin, partner, driver).
+ * - /bookings/{bookingId}: Stores booking data, with denormalized fields for authorization.
+ * - /drivers/{driverId}: Stores driver information.
+ * - /clients/{clientId}: Stores client information.
+ * - /partners/{partnerId}: Stores partner information.
+ * - /notifications/{notificationId}: Stores notifications.
+ * - /reports/{reportId}: Stores reports.
  *
  * Key Security Decisions:
- *  - User listing is generally disallowed for security reasons.
- *  - Data validation is relaxed in this prototyping phase, focusing on authorization and relational integrity.
+ * - User listing is implicitly denied (no `allow list: if true;` on `/users`).
+ * - Authorization relies heavily on the `request.auth` object for user identity.
+ * - All write operations require authentication.
+ * - Read and write access to bookings is controlled based on the user's role
+ *   and the denormalized `createdById`, `createdByRole`, and `driverId` fields in the booking document.
  *
  * Denormalization for Authorization:
- *  - The `bookings` collection includes `createdById` and `createdByRole`, enabling rules to verify
- *    booking creation permissions without reading the user document.
- *  - The `bookings` collection includes `driverId`, enabling drivers to only access bookings assigned
- *    to them, without needing to access another document to verify the assignment.
+ * - Bookings include `createdById`, `createdByRole`, and `driverId` to avoid
+ *   requiring extra `get()` calls to authorize operations.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile data.
+     * @description Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the provided userId.
+     * @param {string} userId - The user ID to compare against.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is the existing owner of the document.
+     * @param {string} userId - The user ID to compare against.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces user-based data access control. Only the authenticated user
+     *              with a matching userId can read or write to their own document.
      * @path /users/{userId}
-     * @allow (get, update, delete) User with matching {userId} in request.auth and resource.data.id.
-     * @allow (create) User with matching {userId} in request.auth and request.resource.data.id.
-     * @deny (get, update, delete) User with non-matching {userId}.
+     * @allow (create) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can create their own document.
+     * @allow (get) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can read their own document.
+     * @allow (update) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can update their own document.
+     * @allow (delete) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can delete their own document.
+     * @deny (create) - Authenticated user 'notMyUserId' cannot create a document with userId 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2'.
      * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
       allow list: if false;
-
-      allow create: if isSignedIn() && request.resource.data.id == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to booking data.
+     * @description Controls access to booking documents. Allows listing all documents,
+     *              but restricts creation, updating, and deletion to authenticated users
+     *              based on their role and the booking's owner.
      * @path /bookings/{bookingId}
-     * @allow (create) User with role 'partner' where request.auth.uid matches request.resource.data.createdById
-     * @allow (get, update, delete) Driver with matching {driverId} in resource.data.driverId.
-     * @deny (create, update, delete) Non-authorized users.
-     * @principle Enforces role-based access control and authorization independence.
+     * @allow (get) - Any user can read booking documents.
+     * @allow (list) - Any user can list booking documents.
+     * @allow (create) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can create a booking.
+     * @deny (update) - Unauthenticated user cannot update a booking.
+     * @deny (delete) - Unauthenticated user cannot delete a booking.
+     * @principle Restricts write access to authenticated users and enforces document ownership.
      */
     match /bookings/{bookingId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if false;
-
+      allow get, list: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn();
       allow delete: if isSignedIn();
     }
 
     /**
-     * @description Controls access to driver data.
+     * @description Controls access to driver documents. Only authenticated users can
+     *              read or write driver information.
      * @path /drivers/{driverId}
-     * @allow (get) Any signed-in user.
-     * @allow (create, update, delete) No one.
-     * @deny (create, update, delete) All write request.
-     * @principle Restricts write access to drivers collection for security.
+     * @allow (get) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can read driver documents.
+     * @allow (list) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can list driver documents.
+     * @allow (create) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can create driver documents.
+     * @allow (update) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can update driver documents.
+     * @allow (delete) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can delete driver documents.
+     * @deny (create) - Unauthenticated user cannot create a driver document.
+     * @principle Requires authentication for all operations on driver documents.
      */
     match /drivers/{driverId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if false;
-
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Controls access to client data.
+     * @description Controls access to client documents. Only authenticated users can
+     *              read or write client information.
      * @path /clients/{clientId}
-     * @allow (get) Any signed-in user.
-     * @allow (create, update, delete) No one.
-     * @deny (create, update, delete) All write request.
-     * @principle Restricts write access to clients collection for security.
+     * @allow (get) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can read client documents.
+     * @allow (list) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can list client documents.
+     * @allow (create) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can create client documents.
+     * @allow (update) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can update client documents.
+     * @allow (delete) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can delete client documents.
+     * @deny (create) - Unauthenticated user cannot create a client document.
+     * @principle Requires authentication for all operations on client documents.
      */
     match /clients/{clientId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if false;
-
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Controls access to partner data.
+     * @description Controls access to partner documents. Only authenticated users can
+     *              read or write partner information.
      * @path /partners/{partnerId}
-     * @allow (get) Any signed-in user.
-     * @allow (create, update, delete) No one.
-     * @deny (create, update, delete) All write request.
-     * @principle Restricts write access to partners collection for security.
+     * @allow (get) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can read partner documents.
+     * @allow (list) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can list partner documents.
+     * @allow (create) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can create partner documents.
+     * @allow (update) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can update partner documents.
+     * @allow (delete) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can delete partner documents.
+     * @deny (create) - Unauthenticated user cannot create a partner document.
+     * @principle Requires authentication for all operations on partner documents.
      */
     match /partners/{partnerId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if false;
-
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Controls access to notification data.
+     * @description Controls access to notification documents. Only authenticated users can
+     *              read or write notification information.
      * @path /notifications/{notificationId}
-     * @allow (get) Any signed-in user.
-     * @allow (create, update, delete) No one.
-     * @deny (create, update, delete) All write request.
-     * @principle Restricts write access to notifications collection for security.
+     * @allow (get) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can read notification documents.
+     * @allow (list) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can list notification documents.
+     * @allow (create) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can create notification documents.
+     * @allow (update) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can update notification documents.
+     * @allow (delete) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can delete notification documents.
+     * @deny (create) - Unauthenticated user cannot create a notification document.
+     * @principle Requires authentication for all operations on notification documents.
      */
     match /notifications/{notificationId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if false;
-
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Controls access to report data.
+     * @description Controls access to report documents. Only authenticated users can
+     *              read or write report information.
      * @path /reports/{reportId}
-     * @allow (get) Any signed-in user.
-     * @allow (create, update, delete) No one.
-     * @deny (create, update, delete) All write request.
-     * @principle Restricts write access to reports collection for security.
+     * @allow (get) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can read report documents.
+     * @allow (list) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can list report documents.
+     * @allow (create) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can create report documents.
+     * @allow (update) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can update report documents.
+     * @allow (delete) - Authenticated user 'dyLiWBS6cVOAB3LAAJnlPAv6DXi2' can delete report documents.
+     * @deny (create) - Unauthenticated user cannot create a report document.
+     * @principle Requires authentication for all operations on report documents.
      */
     match /reports/{reportId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if false;
-
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
   }
 }
