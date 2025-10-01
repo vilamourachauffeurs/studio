@@ -5,12 +5,12 @@ import { bookings } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/firebase";
 
 export default function PartnerView() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const partnerBookings = bookings.filter(
-    (b) => b.partnerId === user?.id || b.createdById === user?.id
+    (b) => b.createdById === user?.uid
   );
   const recentBookings = partnerBookings.slice(0, 5);
 

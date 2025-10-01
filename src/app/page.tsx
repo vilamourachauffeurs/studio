@@ -22,25 +22,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser, useAuth, initiateEmailSignIn } from "@/firebase";
 import type { UserRole } from "@/lib/types";
 import Logo from "@/components/logo";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, login } = useAuth();
-  const [role, setRole] = useState<UserRole>("admin");
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const [email, setEmail] = useState("admin@example.com");
+  const [password, setPassword] = useState("password");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (!isUserLoading && user) {
       router.push("/dashboard");
     }
-  }, [user, router]);
+  }, [user, isUserLoading, router]);
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    login(role);
-    router.push("/dashboard");
+    setError(null);
+    try {
+      // For demo purposes, we'll just use a hardcoded password.
+      // In a real app, you'd get this from the form.
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push("/dashboard");
+    } catch (error: any) {
+      setError(error.message);
+      console.error(error);
+    }
   };
 
   return (
@@ -64,8 +76,9 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@example.com"
-                  defaultValue="admin@example.com"
+                  placeholder="user@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   className="pl-10"
                 />
@@ -78,31 +91,19 @@ export default function LoginPage() {
                 <Input
                   id="password"
                   type="password"
-                  defaultValue="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   className="pl-10"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <div className="relative">
-                 <UserCog className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Select
-                  onValueChange={(value) => setRole(value as UserRole)}
-                  defaultValue={role}
-                >
-                  <SelectTrigger className="pl-10">
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="partner">Partner</SelectItem>
-                    <SelectItem value="driver">Driver</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <p className="text-xs text-muted-foreground">
+              Use roles: admin@example.com, partner@example.com, driver@example.com. Password is 'password' for all.
+            </p>
+
             <Button type="submit" className="w-full text-lg py-6">
               Login
             </Button>

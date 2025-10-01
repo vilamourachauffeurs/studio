@@ -12,7 +12,8 @@ import {
   PanelLeft,
 } from "lucide-react";
 import Logo from "@/components/logo";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser, useFirestore, useDoc } from "@/firebase";
+import { doc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,12 +57,17 @@ function NavLink({
 }
 
 function SidebarNav() {
-    const { user } = useAuth();
-    if (!user) return null;
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const userDocRef = user ? doc(firestore, `users/${user.uid}`) : null;
+    const { data: userProfile } = useDoc(userDocRef);
+
+    if (!user || !userProfile) return null;
 
     return (
         <nav className="grid items-start gap-1 px-2 text-sm font-medium">
-            {NAV_ITEMS.filter(item => item.roles.includes(user.role)).map(item => (
+            {NAV_ITEMS.filter(item => item.roles.includes((userProfile as any).role)).map(item => (
                 <NavLink key={item.href} {...item} />
             ))}
         </nav>

@@ -2,15 +2,15 @@ import { DollarSign, Car, Star } from "lucide-react";
 import { StatsCard } from "./stats-card";
 import BookingsTable from "./bookings-table";
 import { bookings, drivers } from "@/lib/data";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
 
 export default function DriverView() {
-  const { user } = useAuth();
-  const driver = drivers.find((d) => d.id === user?.id);
-  const driverBookings = bookings.filter((b) => b.driverId === user?.id);
+  const { user } = useUser();
+  const driver = drivers.find((d) => d.email === user?.email); // Match by email
+  const driverBookings = bookings.filter((b) => b.driverId === driver?.id);
   const upcomingBookings = driverBookings
     .filter((b) => b.status === "assigned" || b.status === "confirmed")
     .slice(0, 5);
@@ -18,7 +18,7 @@ export default function DriverView() {
   return (
     <div className="space-y-6">
         <div>
-            <h2 className="text-3xl font-headline">Hello, {user?.name}!</h2>
+            <h2 className="text-3xl font-headline">Hello, {driver?.name || user?.displayName}!</h2>
             <p className="text-muted-foreground">Here are your stats and upcoming jobs.</p>
         </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

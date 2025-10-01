@@ -30,13 +30,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/firebase";
 import type { Booking, BookingStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AssignDriverDialog } from "./assign-driver-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getNotesSummary } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { doc, getDoc } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
 
 const statusStyles: Record<BookingStatus, string> = {
   draft: "bg-gray-200 text-gray-800",
@@ -50,11 +52,25 @@ const statusStyles: Record<BookingStatus, string> = {
 };
 
 function BookingActions({ booking }: { booking: Booking }) {
-  const { user } = useAuth();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const [summary, setSummary] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useState(() => {
+    if (user) {
+      const userDocRef = doc(firestore, "users", user.uid);
+      getDoc(userDocRef).then(docSnap => {
+          if (docSnap.exists()) {
+              setUserRole(docSnap.data().role);
+          }
+      })
+    }
+  });
+
 
   const handleSummarize = async () => {
     setIsSummarizing(true);
@@ -76,7 +92,7 @@ function BookingActions({ booking }: { booking: Booking }) {
     setIsSummarizing(false);
   };
 
-  if (!user) return null;
+  if (!user || !userRole) return null;
 
   return (
     <>
@@ -98,7 +114,7 @@ function BookingActions({ booking }: { booking: Booking }) {
             Copy Booking ID
           </DropdownMenuItem>
 
-          {user.role === "admin" && (
+          {userRole === "admin" && (
             <>
               {booking.status === "pending_admin" && (
                 <DropdownMenuItem>
@@ -119,7 +135,7 @@ function BookingActions({ booking }: { booking: Booking }) {
             </>
           )}
 
-          {user.role === "driver" && booking.driverId === user.id && (
+          {userRole === "driver" && booking.driverId === user.uid && (
             <>
               {booking.status === "assigned" && (
                 <DropdownMenuItem>
@@ -162,14 +178,27 @@ export default function BookingsTable({
   bookings: Booking[];
   isDashboard?: boolean;
 }) {
-  const { user } = useAuth();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useState(() => {
+    if (user) {
+      const userDocRef = doc(firestore, "users", user.uid);
+      getDoc(userDocRef).then(docSnap => {
+          if (docSnap.exists()) {
+              setUserRole(docSnap.data().role);
+          }
+      })
+    }
+  });
 
   const filteredBookings =
-    user?.role === "admin"
+    userRole === "admin"
       ? bookings
       : bookings.filter((b) => {
-          if (user?.role === "partner") return b.createdById === user.id;
-          if (user?.role === "driver") return b.driverId === user.id;
+          if (userRole === "partner") return b.createdById === user?.uid;
+          if (userRole === "driver") return b.driverId === user?.uid;
           return false;
         });
 

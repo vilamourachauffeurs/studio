@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   PanelLeft,
@@ -19,14 +19,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser, useAuth } from "@/firebase";
 import Logo from "../logo";
 import DashboardSidebar from "./sidebar";
+import { signOut } from "firebase/auth";
 
 
 export default function DashboardHeader() {
-  const { user, logout } = useAuth();
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
   const pathname = usePathname();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push("/");
+  };
+
 
   const getPageTitle = () => {
     if (pathname.startsWith('/dashboard/bookings')) return 'Bookings';
@@ -60,8 +69,8 @@ export default function DashboardHeader() {
             <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
                 <Avatar>
-                    <AvatarImage src={user?.avatarUrl} alt={user?.name} />
-                    <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} />
+                    <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
             </Button>
             </DropdownMenuTrigger>
@@ -71,7 +80,7 @@ export default function DashboardHeader() {
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     </header>
