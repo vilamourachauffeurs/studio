@@ -11,6 +11,7 @@ import {
   Flag,
   MapPin,
   MoreVertical,
+  Pencil,
   StickyNote,
   User,
   Users,
@@ -141,15 +142,16 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
             <div>
                 <h1 className="text-3xl font-headline flex items-center gap-4">
                     <span>Booking #{booking.id.substring(0, 7)}</span>
-                     <div className={cn("flex items-center gap-2 rounded-full border pl-3 pr-1.5 py-1 text-base", statusStyles[booking.status])}>
-                        <span className="capitalize font-medium">{booking.status.replace("_", " ")}</span>
+                     <div className={cn("flex items-center rounded-full border text-base font-medium overflow-hidden", statusStyles[booking.status])}>
+                        <span className="capitalize px-3 py-1">{booking.status.replace("_", " ")}</span>
+                         <div className="h-full w-px bg-current opacity-40"></div>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 rounded-full hover:bg-black/10"
+                            className="h-8 w-8 rounded-none hover:bg-black/10"
                             onClick={() => setIsChangeStatusOpen(true)}
                         >
-                            <Flag className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
                             <span className="sr-only">Change Status</span>
                         </Button>
                      </div>
