@@ -22,14 +22,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useUser, useAuth, initiateEmailSignIn } from "@/firebase";
+import { useUser, useAuth } from "@/firebase";
 import type { UserRole } from "@/lib/types";
 import Logo from "@/components/logo";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
 
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("password");
@@ -45,13 +48,37 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     try {
-      // For demo purposes, we'll just use a hardcoded password.
-      // In a real app, you'd get this from the form.
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/dashboard");
     } catch (error: any) {
-      setError(error.message);
-      console.error(error);
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+          let role: UserRole = "driver";
+          if (email.startsWith("admin")) {
+            role = "admin";
+          } else if (email.startsWith("partner")) {
+            role = "partner";
+          }
+          
+          await setDoc(doc(firestore, "users", user.uid), {
+            id: user.uid,
+            email: user.email,
+            name: user.email,
+            phone: '',
+            role: role,
+          });
+
+          router.push("/dashboard");
+        } catch (createUserError: any) {
+          setError(createUserError.message);
+          console.error(createUserError);
+        }
+      } else {
+        setError(error.message);
+        console.error(error);
+      }
     }
   };
 
