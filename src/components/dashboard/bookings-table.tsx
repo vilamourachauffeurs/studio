@@ -10,6 +10,7 @@ import {
   Clock,
   Car,
   Rocket,
+  Eye,
 } from "lucide-react";
 
 import {
@@ -38,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getNotesSummary } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { doc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 
 const statusStyles: Record<BookingStatus, string> = {
   draft: "bg-gray-200 text-gray-800",
@@ -57,6 +59,7 @@ function BookingActions({ booking }: { booking: Booking }) {
   const { toast } = useToast();
   const [summary, setSummary] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const router = useRouter();
 
   const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
   const { data: userProfile } = useDoc(userDocRef);
@@ -101,6 +104,9 @@ function BookingActions({ booking }: { booking: Booking }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}>
+            <Eye className="mr-2 h-4 w-4" /> View Details
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigator.clipboard.writeText(booking.id)}>
             Copy Booking ID
           </DropdownMenuItem>
@@ -171,6 +177,7 @@ export default function BookingsTable({
 }) {
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
   const { data: userProfile } = useDoc(userDocRef);
@@ -181,7 +188,7 @@ export default function BookingsTable({
     userRole === "admin"
       ? bookings
       : bookings.filter((b) => {
-          if (userRole === "partner") return b.requestedById === user?.uid;
+          if (userRole === "partner") return b.createdById === user?.uid;
           if (userRole === "driver") return b.driverId === user?.uid;
           return false;
         });
@@ -200,6 +207,10 @@ export default function BookingsTable({
     return new Date(timestamp).toLocaleString();
   };
 
+  const handleRowClick = (bookingId: string) => {
+    router.push(`/dashboard/bookings/${bookingId}`);
+  }
+
   return (
     <div className="w-full">
       <Table>
@@ -217,7 +228,7 @@ export default function BookingsTable({
         </TableHeader>
         <TableBody>
           {filteredBookings.map((booking) => (
-            <TableRow key={booking.id}>
+            <TableRow key={booking.id} onClick={() => handleRowClick(booking.id)} className="cursor-pointer">
               <TableCell>
                 <div className="font-medium">{booking.clientName || 'N/A'}</div>
               </TableCell>
@@ -236,7 +247,7 @@ export default function BookingsTable({
                   {booking.status.replace("_", " ")}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
                 <BookingActions booking={booking} />
               </TableCell>
             </TableRow>
