@@ -5,18 +5,22 @@ import DriverView from "@/components/dashboard/driver-view";
 import PartnerView from "@/components/dashboard/partner-view";
 import { useUser } from "@/firebase";
 import { doc } from 'firebase/firestore';
-import { useFirestore, useDoc } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 
 export default function DashboardPage() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const userDocRef = user ? doc(firestore, `users/${user.uid}`) : null;
+  const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
   const { data: userProfile } = useDoc(userDocRef);
 
 
   if (!user || !userProfile) {
-    return null; // Or a loading spinner
+    return (
+       <div className="flex h-screen w-full items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   const renderDashboard = () => {

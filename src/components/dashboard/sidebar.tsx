@@ -12,7 +12,7 @@ import {
   PanelLeft,
 } from "lucide-react";
 import Logo from "@/components/logo";
-import { useUser, useFirestore, useDoc } from "@/firebase";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ function SidebarNav() {
     const { user } = useUser();
     const firestore = useFirestore();
 
-    const userDocRef = user ? doc(firestore, `users/${user.uid}`) : null;
+    const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
     const { data: userProfile } = useDoc(userDocRef);
 
     if (!user || !userProfile) return null;
