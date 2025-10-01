@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { format } from "date-fns";
+import { format, setHours, setMinutes } from "date-fns";
 import { CalendarIcon, Euro, Users, Briefcase, MapPin, User, FileSignature } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -172,35 +172,71 @@ export default function NewBookingPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Pickup Date & Time</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP HH:mm")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <div className="flex gap-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                )}
+                                >
+                                {field.value ? (
+                                    format(field.value, "PPP")
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={(date) => {
+                                    if (!date) return;
+                                    const newDate = new Date(field.value);
+                                    newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                                    field.onChange(newDate);
+                                }}
+                                disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <Select
+                            value={field.value.getHours().toString()}
+                            onValueChange={(value) => field.onChange(setHours(field.value, parseInt(value)))}
+                        >
+                            <SelectTrigger className="w-[80px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map(hour => (
+                                    <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select
+                            value={field.value.getMinutes().toString()}
+                            onValueChange={(value) => field.onChange(setMinutes(field.value, parseInt(value)))}
+                        >
+                            <SelectTrigger className="w-[80px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {['00', '15', '30', '45'].map(min => (
+                                    <SelectItem key={min} value={min}>{min}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                      </div>
+                       <FormDescription>
+                          Current time: {format(field.value, "HH:mm")}
+                        </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
