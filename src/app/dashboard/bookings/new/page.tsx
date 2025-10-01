@@ -39,6 +39,7 @@ import { collection, serverTimestamp } from "firebase/firestore";
 import type { Partner } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useCollection } from "@/firebase";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const bookingFormSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required."),
@@ -57,19 +58,8 @@ const bookingFormSchema = z.object({
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
 
-// Helper to generate time slots
-const createTimeSlots = () => {
-    const slots = [];
-    for (let h = 0; h < 24; h++) {
-        for (let m = 0; m < 60; m += 15) {
-            const hour = h.toString().padStart(2, '0');
-            const minute = m.toString().padStart(2, '0');
-            slots.push(`${hour}:${minute}`);
-        }
-    }
-    return slots;
-};
-const timeSlots = createTimeSlots();
+const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+const minutes = ['00', '15', '30', '45'];
 
 
 export default function NewBookingPage() {
@@ -187,7 +177,6 @@ export default function NewBookingPage() {
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Pickup Date & Time</FormLabel>
-                      <div className="flex gap-2">
                         <Popover>
                             <PopoverTrigger asChild>
                             <FormControl>
@@ -200,15 +189,14 @@ export default function NewBookingPage() {
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
                                 {field.value ? (
-                                    format(field.value, "PPP")
+                                    format(field.value, "PPP 'at' HH:mm")
                                 ) : (
-                                    <span>Pick a date</span>
+                                    <span>Pick a date and time</span>
                                 )}
-                                
                                 </Button>
                             </FormControl>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent className="w-auto p-0 flex" align="start">
                             <Calendar
                                 mode="single"
                                 selected={field.value}
@@ -221,29 +209,38 @@ export default function NewBookingPage() {
                                 disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
                                 initialFocus
                             />
+                            <div className="flex border-l">
+                                <ScrollArea className="h-80 w-20">
+                                    <div className="p-1">
+                                        {hours.map(hour => (
+                                            <Button
+                                                key={hour}
+                                                variant={format(field.value, "HH") === hour ? "default" : "ghost"}
+                                                className="w-full justify-center"
+                                                onClick={() => field.onChange(setHours(field.value, parseInt(hour)))}
+                                            >
+                                                {hour}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                                <ScrollArea className="h-80 w-20 border-l">
+                                     <div className="p-1">
+                                        {minutes.map(minute => (
+                                            <Button
+                                                key={minute}
+                                                variant={format(field.value, "mm") === minute ? "default" : "ghost"}
+                                                className="w-full justify-center"
+                                                onClick={() => field.onChange(setMinutes(field.value, parseInt(minute)))}
+                                            >
+                                                {minute}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            </div>
                             </PopoverContent>
                         </Popover>
-                        <Select
-                            value={format(field.value, "HH:mm")}
-                            onValueChange={(value) => {
-                                const [hours, minutes] = value.split(':').map(Number);
-                                const newDate = setMinutes(setHours(field.value, hours), minutes);
-                                field.onChange(newDate);
-                            }}
-                        >
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {timeSlots.map(time => (
-                                    <SelectItem key={time} value={time}>{time}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                      </div>
-                       <FormDescription>
-                          Selected: {format(field.value, "PPP 'at' HH:mm")}
-                        </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -396,3 +393,5 @@ export default function NewBookingPage() {
     </div>
   );
 }
+
+    
