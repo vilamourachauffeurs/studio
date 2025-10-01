@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Car, DollarSign, Users, Briefcase, MapPin, Clock, Hash, User } from "lucide-react";
+import { CalendarIcon, Euro, Users, Briefcase, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +38,7 @@ import { addDocumentNonBlocking, useAuth, useCollection, useFirestore, useMemoFi
 import { collection } from "firebase/firestore";
 import type { Client, Partner, User } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import { User } from "lucide-react";
 
 const bookingFormSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required."),
@@ -71,7 +72,7 @@ export default function NewBookingPage() {
     defaultValues: {
       pickupLocation: "",
       dropoffLocation: "",
-      pickupTime: undefined,
+      pickupTime: new Date(),
       pax: 1,
       clientName: "",
       partnerId: "",
@@ -228,7 +229,7 @@ export default function NewBookingPage() {
                       <FormControl>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="e.g., John Doe" {...field} className="pl-10"/>
+                            <Input placeholder="e.g., John Doe" {...field} value={field.value ?? ""} className="pl-10"/>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -268,11 +269,11 @@ export default function NewBookingPage() {
                   name="cost"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cost</FormLabel>
+                      <FormLabel>Cost (€)</FormLabel>
                       <FormControl>
                         <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input type="number" step="0.01" placeholder="e.g. 150.00" {...field} className="pl-10" />
+                            <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input type="number" step="1" placeholder="e.g. 150" {...field} className="pl-10" />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -286,7 +287,7 @@ export default function NewBookingPage() {
                         <FormItem>
                         <FormLabel>Payment Type</FormLabel>
                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                 <SelectTrigger className="pl-10">
@@ -312,7 +313,7 @@ export default function NewBookingPage() {
                         <FormItem>
                         <FormLabel>Notes (Optional)</FormLabel>
                         <FormControl>
-                            <Input placeholder="e.g. Client has extra luggage" {...field} />
+                            <Input placeholder="e.g. Client has extra luggage" {...field} value={field.value ?? ""} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -332,3 +333,5 @@ export default function NewBookingPage() {
     </div>
   );
 }
+
+    
