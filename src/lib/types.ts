@@ -12,6 +12,8 @@ export type BookingStatus =
   | "completed"
   | "cancelled";
 
+export type PaymentType = "credit_card" | "account" | "cash";
+
 export type User = {
   id: string;
   name: string;
@@ -24,21 +26,26 @@ export type Booking = {
   id: string;
   clientId: string;
   client?: Client;
-  partnerId?: string;
+  requestedById: string; // User ID of admin or partner
+  partnerId?: string; // Operator
   partner?: Partner;
   pickupLocation: string;
   dropoffLocation:string;
   pickupTime: Timestamp | Date;
+  pax: number; // Number of passengers
   status: BookingStatus;
   driverId?: string;
   driver?: Driver;
-  createdByRole: UserRole;
-  createdById: string;
   createdAt: Timestamp | Date;
   notes: string;
-  price: number;
-  commissionPartner: number;
-  commissionDriver: number;
+  cost: number;
+  paymentType: PaymentType;
+  // The following fields are likely calculated or for internal accounting
+  // and may not need to be on the primary booking object.
+  // We can add them later if needed.
+  // price: number;
+  // commissionPartner: number;
+  // commissionDriver: number;
 };
 
 export type Driver = {

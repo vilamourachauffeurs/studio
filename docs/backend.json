@@ -82,4 +82,216 @@
         },
         "driverId": {
           "type": "string",
-...
+          "description": "The ID of the assigned driver."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the booking.",
+          "enum": [
+            "draft",
+            "pending_admin",
+            "approved",
+            "assigned",
+            "confirmed",
+            "in_progress",
+            "completed",
+            "cancelled"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any special notes or requests for the booking."
+        },
+        "cost": {
+          "type": "number",
+          "description": "The total cost of the booking."
+        },
+        "paymentType": {
+          "type": "string",
+          "description": "The method of payment.",
+          "enum": [
+            "credit_card",
+            "account",
+            "cash"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the booking was created."
+        }
+      },
+      "required": [
+        "id",
+        "pickupTime",
+        "pickupLocation",
+        "dropoffLocation",
+        "pax",
+        "clientId",
+        "requestedById",
+        "status",
+        "cost",
+        "paymentType",
+        "createdAt"
+      ]
+    },
+    "Driver": {
+      "title": "Driver",
+      "description": "Represents a driver in the Chauffeur Pro system.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the driver."
+        },
+        "name": {
+          "type": "string",
+          "description": "The driver's full name."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The driver's phone number."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The driver's email address."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for the driver's profile picture."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "online",
+            "offline"
+          ],
+          "description": "The driver's current availability status."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "phone",
+        "email",
+        "status"
+      ]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Represents a client who books rides.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the client."
+        },
+        "name": {
+          "type": "string",
+          "description": "The client's full name."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The client's phone number."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The client's email address."
+        },
+        "company": {
+          "type": "string",
+          "description": "The client's company name, if applicable."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Internal notes about the client."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "phone",
+        "email"
+      ]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "Represents a partner company (e.g., hotel, corporate account) that can book on behalf of clients.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the partner."
+        },
+        "name": {
+          "type": "string",
+          "description": "The partner company's name."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The name of the primary contact person."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The partner's contact email address."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The partner's contact phone number."
+        },
+        "commissionRate": {
+          "type": "number",
+          "description": "The commission percentage for bookings from this partner."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "phone"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "anonymous",
+      "email-password"
+    ]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores public profiles for all users."
+    },
+    "/bookings/{bookingId}": {
+      "schema": {
+        "$ref": "#/entities/Booking"
+      },
+      "description": "Collection of all bookings made in the system."
+    },
+    "/drivers/{driverId}": {
+      "schema": {
+        "$ref": "#/entities/Driver"
+      },
+      "description": "Collection of all drivers."
+    },
+    "/clients/{clientId}": {
+      "schema": {
+        "$ref": "#/entities/Client"
+      },
+      "description": "Collection of all clients."
+    },
+    "/partners/{partnerId}": {
+      "schema": {
+        "$ref": "#/entities/Partner"
+      },
+      "description": "Collection of all partners."
+    }
+  }
+}
