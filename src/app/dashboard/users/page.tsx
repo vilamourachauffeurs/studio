@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export default function UsersPage() {
     const firestore = useFirestore();
     const router = useRouter();
-    const { user: authUser, isUserLoading: isAuthLoading } = useUser();
+    const { user: authUser } = useUser();
 
     const userDocRef = useMemoFirebase(() => authUser ? doc(firestore, `users/${authUser.uid}`) : null, [authUser, firestore]);
     const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
@@ -27,7 +27,7 @@ export default function UsersPage() {
     const usersQuery = useMemoFirebase(() => usersCollectionRef ? query(usersCollectionRef) : null, [usersCollectionRef]);
     const { data: users, isLoading: areUsersLoading } = useCollection<User>(usersQuery);
 
-    const isLoading = isAuthLoading || isProfileLoading || areUsersLoading;
+    const isLoading = isProfileLoading || areUsersLoading;
 
     const handleRowClick = (userId: string) => {
         router.push(`/dashboard/users/${userId}`);
