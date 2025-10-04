@@ -9,10 +9,12 @@ import { Separator } from "@/components/ui/separator";
 import { useDoc, useFirestore, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
   const userDocRef = user ? doc(firestore, "users", user.uid) : null;
   const { data: userProfile } = useDoc(userDocRef);
 
@@ -66,7 +68,8 @@ export default function SettingsPage() {
               <CardDescription>Manage user roles and permissions.</CardDescription>
             </CardHeader>
             <CardContent>
-                <p>User management interface will go here.</p>
+                <p>Add, edit or remove users from the system.</p>
+                <Button className="mt-4" onClick={() => router.push('/dashboard/users')}>Manage Users</Button>
             </CardContent>
           </Card>
           <div className="flex justify-end">

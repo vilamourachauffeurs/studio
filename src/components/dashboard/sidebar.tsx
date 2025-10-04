@@ -34,6 +34,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/partners", label: "Partners", icon: Briefcase, roles: ["admin"] },
   { href: "/dashboard/operators", label: "Operators", icon: Hotel, roles: ["admin"] },
   { href: "/dashboard/clients", label: "Clients", icon: Users, roles: ["admin"] },
+  { href: "/dashboard/users", label: "Users", icon: Users, roles: ["admin"] },
   { href: "/dashboard/reports", label: "Reports", icon: FileText, roles: ["admin"] },
   { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin", "partner", "driver"] },
 ];
@@ -106,7 +107,7 @@ export function MobileSheet() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col w-64 p-0">
-                <SheetHeader className="h-16 items-center border-b px-6 flex flex-row">
+                <SheetHeader>
                   <Logo />
                   <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 </SheetHeader>
