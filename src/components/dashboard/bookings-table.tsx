@@ -14,8 +14,9 @@ import {
   Users,
   Pencil,
   Filter,
+  Calendar as CalendarIcon,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isSameDay, startOfDay } from "date-fns";
 
 import {
   Table,
@@ -48,6 +49,8 @@ import { doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 import { Input } from "../ui/input";
+import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
+import { Calendar } from "../ui/calendar";
 
 const ALL_STATUSES: BookingStatus[] = [
     "draft",
@@ -261,16 +264,38 @@ export default function BookingsTable({
     const [statusFilter, setStatusFilter] = useState<BookingStatus[]>(DEFAULT_FILTER);
     const [pickupFilter, setPickupFilter] = useState<string>("");
     const [dropoffFilter, setDropoffFilter] = useState<string>("");
+    const [paxFilter, setPaxFilter] = useState<string>("");
+    const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+
+    const filterSuggestions = useMemo(() => {
+        const today = startOfDay(new Date());
+        const futureBookings = bookings.filter(b => toDate(b.pickupTime) >= today);
+
+        const uniquePickups = [...new Set(futureBookings.map(b => b.pickupLocation))];
+        const uniqueDropoffs = [...new Set(futureBookings.map(b => b.dropoffLocation))];
+        const uniquePax = [...new Set(futureBookings.map(b => b.pax.toString()))].sort((a,b) => parseInt(a) - parseInt(b));
+
+        return {
+            pickups: uniquePickups,
+            dropoffs: uniqueDropoffs,
+            pax: uniquePax,
+        };
+    }, [bookings]);
+
 
     const filteredBookings = useMemo(() => {
         if (!bookings) return [];
         return bookings.filter(booking => {
+            const bookingDate = toDate(booking.pickupTime);
             const statusMatch = statusFilter.length === 0 ? true : statusFilter.includes(booking.status);
             const pickupMatch = !pickupFilter || booking.pickupLocation.toLowerCase().includes(pickupFilter.toLowerCase());
             const dropoffMatch = !dropoffFilter || booking.dropoffLocation.toLowerCase().includes(dropoffFilter.toLowerCase());
-            return statusMatch && pickupMatch && dropoffMatch;
+            const paxMatch = !paxFilter || booking.pax.toString() === paxFilter;
+            const dateMatch = !dateFilter || isSameDay(bookingDate, dateFilter);
+
+            return statusMatch && pickupMatch && dropoffMatch && paxMatch && dateMatch;
         });
-    }, [bookings, statusFilter, pickupFilter, dropoffFilter]);
+    }, [bookings, statusFilter, pickupFilter, dropoffFilter, paxFilter, dateFilter]);
 
     const toggleStatusFilter = (status: BookingStatus) => {
         setStatusFilter(prev =>
@@ -306,23 +331,47 @@ export default function BookingsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead style={{ width: '150px' }}>Date / Time</TableHead>
+            <TableHead style={{ width: '150px' }}>
+                <div className="flex items-center gap-2">
+                    Date / Time
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className={cn("h-6 w-6", dateFilter && "text-primary")}>
+                                <Filter className="h-4 w-4"/>
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                             <Calendar
+                                mode="single"
+                                selected={dateFilter}
+                                onSelect={setDateFilter}
+                                initialFocus
+                            />
+                             {dateFilter && <div className="p-2 border-t"><Button variant="outline" size="sm" className="w-full" onClick={() => setDateFilter(undefined)}>Clear Filter</Button></div>}
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </TableHead>
             <TableHead>
                 <div className="flex items-center gap-2">
                     Pickup
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                             <Button variant="ghost" size="icon" className={cn("h-6 w-6", pickupFilter && "text-primary")}>
                                 <Filter className="h-4 w-4"/>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent onClick={(e) => e.stopPropagation()} className="p-2">
                             <Input 
-                                placeholder="Filter..."
+                                placeholder="Filter by pickup..."
                                 value={pickupFilter}
                                 onChange={(e) => setPickupFilter(e.target.value)}
-                                className="w-48"
+                                className="w-48 mb-2"
                             />
+                             {filterSuggestions.pickups.map(p => (
+                                <DropdownMenuItem key={p} onSelect={() => setPickupFilter(p)}>{p}</DropdownMenuItem>
+                            ))}
+                            {pickupFilter && <DropdownMenuItem onClick={() => setPickupFilter("")} className="text-destructive">Clear Filter</DropdownMenuItem>}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -332,28 +381,49 @@ export default function BookingsTable({
                     Drop-off
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Button variant="ghost" size="icon" className={cn("h-6 w-6", dropoffFilter && "text-primary")}>
                                 <Filter className="h-4 w-4"/>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent onClick={(e) => e.stopPropagation()} className="p-2">
                             <Input 
-                                placeholder="Filter..."
+                                placeholder="Filter by dropoff..."
                                 value={dropoffFilter}
                                 onChange={(e) => setDropoffFilter(e.target.value)}
-                                className="w-48"
+                                className="w-48 mb-2"
                             />
+                            {filterSuggestions.dropoffs.map(d => (
+                                <DropdownMenuItem key={d} onSelect={() => setDropoffFilter(d)}>{d}</DropdownMenuItem>
+                            ))}
+                             {dropoffFilter && <DropdownMenuItem onClick={() => setDropoffFilter("")} className="text-destructive">Clear Filter</DropdownMenuItem>}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
             </TableHead>
-            <TableHead style={{ width: '100px' }}>PAX</TableHead>
+            <TableHead style={{ width: '100px' }}>
+                <div className="flex items-center gap-2">
+                        PAX
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className={cn("h-6 w-6", paxFilter && "text-primary")}>
+                                    <Filter className="h-4 w-4"/>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent onClick={(e) => e.stopPropagation()} className="p-2">
+                                {filterSuggestions.pax.map(p => (
+                                    <DropdownMenuItem key={p} onSelect={() => setPaxFilter(p)}>{p}</DropdownMenuItem>
+                                ))}
+                                {paxFilter && <DropdownMenuItem onClick={() => setPaxFilter("")} className="text-destructive">Clear Filter</DropdownMenuItem>}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+            </TableHead>
             <TableHead style={{ width: '180px' }}>
                  <div className="flex items-center gap-2">
                     Status
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Button variant="ghost" size="icon" className={cn("h-6 w-6", statusFilter.length !== DEFAULT_FILTER.length && "text-primary")}>
                                 <Filter className="h-4 w-4"/>
                             </Button>
                         </DropdownMenuTrigger>
@@ -369,6 +439,9 @@ export default function BookingsTable({
                                 {status.replace(/_/g, ' ')}
                             </DropdownMenuCheckboxItem>
                             ))}
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => setStatusFilter(DEFAULT_FILTER)}>Reset to Default</DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => setStatusFilter([])}>Clear All</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                  </div>
@@ -394,3 +467,4 @@ export default function BookingsTable({
     </div>
   );
 }
+
