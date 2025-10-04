@@ -10,7 +10,7 @@ import {
   type SuggestDriverForBookingInput,
 } from "@/ai/flows/suggest-driver-for-booking";
 import { BookingStatus, Booking } from "./types";
-import { doc, updateDoc, runTransaction, serverTimestamp, collection, setDoc } from "firebase/firestore";
+import { doc, updateDoc, runTransaction, serverTimestamp, collection } from "firebase/firestore";
 import { firestore } from "@/firebase/server";
 import { format } from "date-fns";
 
@@ -64,6 +64,7 @@ export async function createBookingWithSequentialId(bookingData: Omit<Booking, '
             
             transaction.set(counterRef, { lastNumber: newNumber });
 
+            // Generate the document reference on the server side
             const newBookingRef = doc(collection(firestore, 'bookings'));
             
             transaction.set(newBookingRef, {
