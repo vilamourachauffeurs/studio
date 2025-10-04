@@ -8,6 +8,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy } from "firebase/firestore";
 import type { Booking } from "@/lib/types";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BookingsPage() {
   const firestore = useFirestore();
@@ -31,14 +32,20 @@ export default function BookingsPage() {
       <Card className="shadow-lg">
           <CardHeader>
               <CardTitle>All Bookings</CardTitle>
-              <CardDescription>A list of all bookings in the system.</CardDescription>
+              <CardDescription>A list of all bookings in the system, grouped by day.</CardDescription>
           </CardHeader>
           <CardContent>
-             {isLoading ? <p>Loading bookings...</p> : <BookingsTable bookings={bookings || []} />}
+             {isLoading ? (
+                <div className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full bg-muted/50" />
+                    <Skeleton className="h-12 w-full bg-muted/50" />
+                    <Skeleton className="h-12 w-full" />
+                </div>
+             ) : <BookingsTable bookings={bookings || []} />}
           </CardContent>
       </Card>
     </div>
   );
 }
-
-    

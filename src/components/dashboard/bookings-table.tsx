@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   MoreHorizontal,
   CheckCircle,
@@ -11,7 +11,9 @@ import {
   Car,
   Rocket,
   Eye,
+  Users,
 } from "lucide-react";
+import { format, isSameDay } from "date-fns";
 
 import {
   Table,
@@ -40,6 +42,7 @@ import { getNotesSummary } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { Timestamp } from "firebase/firestore";
 
 const statusStyles: Record<BookingStatus, string> = {
   draft: "bg-gray-200 text-gray-800",
@@ -67,6 +70,7 @@ function BookingActions({ booking }: { booking: Booking }) {
   const userRole = userProfile ? (userProfile as any).role : null;
 
   const handleSummarize = async () => {
+    if (!booking.notes) return;
     setIsSummarizing(true);
     setSummary(null);
     const result = await getNotesSummary({ notes: booking.notes });
@@ -168,47 +172,39 @@ function BookingActions({ booking }: { booking: Booking }) {
   );
 }
 
+const toDate = (timestamp: Timestamp | Date): Date => {
+    return timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
+};
+
 export default function BookingsTable({
   bookings,
-  isDashboard = false,
 }: {
   bookings: Booking[];
-  isDashboard?: boolean;
 }) {
-  const { user } = useUser();
-  const firestore = useFirestore();
   const router = useRouter();
-
-  const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
-  const { data: userProfile } = useDoc(userDocRef);
-
-  const userRole = userProfile ? (userProfile as any).role : null;
-
-  const filteredBookings =
-    userRole === "admin"
-      ? bookings
-      : bookings.filter((b) => {
-          if (userRole === "partner") return b.createdById === user?.uid;
-          if (userRole === "driver") return b.driverId === user?.uid;
-          return false;
-        });
-
-  if (filteredBookings.length === 0) {
-    return <div className="text-center text-muted-foreground py-8">No bookings found.</div>
-  }
-  
-  const formatTimestamp = (timestamp: any) => {
-    if (!timestamp) return 'N/A';
-    // Firestore timestamps can be objects with seconds and nanoseconds
-    if (timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000).toLocaleString();
-    }
-    // Or they might already be Date objects if transformed
-    return new Date(timestamp).toLocaleString();
-  };
 
   const handleRowClick = (bookingId: string) => {
     router.push(`/dashboard/bookings/${bookingId}`);
+  };
+
+  const groupedBookings = useMemo(() => {
+    if (!bookings || bookings.length === 0) return [];
+    
+    return bookings.reduce((acc, booking) => {
+      const bookingDate = toDate(booking.pickupTime);
+      const dateStr = format(bookingDate, 'yyyy-MM-dd');
+      const existingGroup = acc.find(group => group.date === dateStr);
+      if (existingGroup) {
+        existingGroup.bookings.push(booking);
+      } else {
+        acc.push({ date: dateStr, bookings: [booking] });
+      }
+      return acc;
+    }, [] as { date: string, bookings: Booking[] }[]);
+  }, [bookings]);
+
+  if (groupedBookings.length === 0) {
+    return <div className="text-center text-muted-foreground py-8">No bookings found.</div>
   }
 
   return (
@@ -216,41 +212,52 @@ export default function BookingsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Client</TableHead>
-            <TableHead className={cn(isDashboard && "hidden md:table-cell")}>Pickup</TableHead>
-            <TableHead className={cn(isDashboard && "hidden lg:table-cell")}>Date & Time</TableHead>
-            {!isDashboard && <TableHead>Driver</TableHead>}
-            <TableHead>Status</TableHead>
-            <TableHead>
-              <span className="sr-only">Actions</span>
-            </TableHead>
+            <TableHead style={{ width: '150px' }}>Date / Time</TableHead>
+            <TableHead>Pickup</TableHead>
+            <TableHead>Drop-off</TableHead>
+            <TableHead style={{ width: '100px' }}>PAX</TableHead>
+            <TableHead style={{ width: '150px' }}>Status</TableHead>
+            <TableHead style={{ width: '80px' }}><span className="sr-only">Actions</span></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredBookings.map((booking) => (
-            <TableRow key={booking.id} onClick={() => handleRowClick(booking.id)} className="cursor-pointer">
-              <TableCell>
-                <div className="font-medium">{booking.clientName || 'N/A'}</div>
-              </TableCell>
-              <TableCell className={cn(isDashboard && "hidden md:table-cell")}>{booking.pickupLocation}</TableCell>
-              <TableCell className={cn(isDashboard && "hidden lg:table-cell")}>
-                {formatTimestamp(booking.pickupTime)}
-              </TableCell>
-              {!isDashboard && (
-                <TableCell>{booking.driver?.name || "Unassigned"}</TableCell>
-              )}
-              <TableCell>
-                <Badge
-                  className={cn("capitalize", statusStyles[booking.status])}
-                  variant="outline"
+          {groupedBookings.map((group, groupIndex) => (
+            group.bookings.map((booking) => {
+              const isEvenDay = groupIndex % 2 === 0;
+              const pickupDate = toDate(booking.pickupTime);
+
+              return (
+                <TableRow
+                  key={booking.id}
+                  onClick={() => handleRowClick(booking.id)}
+                  className={cn("cursor-pointer", isEvenDay ? "bg-white" : "bg-muted/40")}
                 >
-                  {booking.status.replace("_", " ")}
-                </Badge>
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <BookingActions booking={booking} />
-              </TableCell>
-            </TableRow>
+                  <TableCell>
+                    <div className="font-medium">{format(pickupDate, "dd/MM")}</div>
+                    <div className="text-sm text-muted-foreground">{format(pickupDate, "HH:mm")}</div>
+                  </TableCell>
+                  <TableCell>{booking.pickupLocation}</TableCell>
+                  <TableCell>{booking.dropoffLocation}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>{booking.pax}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={cn("capitalize", statusStyles[booking.status])}
+                      variant="outline"
+                    >
+                      {booking.status.replace(/_/g, " ")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <BookingActions booking={booking} />
+                  </TableCell>
+                </TableRow>
+              );
+            })
           ))}
         </TableBody>
       </Table>
