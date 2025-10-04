@@ -61,6 +61,7 @@ export type Driver = {
   age: number;
   nationalId?: string;
   driversLicense?: string;
+  commissionRate?: number;
   currentJobId?: string;
   performance?: {
     completedJobs: number;

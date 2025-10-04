@@ -208,6 +208,10 @@
         "driversLicense": {
             "type": "string",
             "description": "The driver's license number."
+        },
+        "commissionRate": {
+            "type": "number",
+            "description": "The commission percentage for the driver."
         }
       },
       "required": [

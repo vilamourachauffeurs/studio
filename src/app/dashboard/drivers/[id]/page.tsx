@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, differenceInYears } from "date-fns";
-import { ArrowLeft, CalendarIcon, User, Mail, Phone, Hash, CreditCard } from "lucide-react";
+import { ArrowLeft, CalendarIcon, User, Mail, Phone, Hash, CreditCard, Percent } from "lucide-react";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ const driverFormSchema = z.object({
   age: z.coerce.number().min(18, "Driver must be at least 18 years old."),
   nationalId: z.string().optional(),
   driversLicense: z.string().optional(),
+  commissionRate: z.coerce.number().min(0, "Commission must be a positive number.").optional(),
 });
 
 type DriverFormValues = z.infer<typeof driverFormSchema>;
@@ -66,6 +67,7 @@ export default function EditDriverPage() {
       age: 0,
       nationalId: "",
       driversLicense: "",
+      commissionRate: 0,
     },
   });
 
@@ -94,6 +96,7 @@ export default function EditDriverPage() {
         age: driver.age,
         nationalId: driver.nationalId ?? '',
         driversLicense: driver.driversLicense ?? '',
+        commissionRate: driver.commissionRate ?? 0,
       });
     }
   }, [driver, form]);
@@ -222,7 +225,22 @@ export default function EditDriverPage() {
                     </FormItem>
                   )}
                 />
-                <div></div>
+                <FormField
+                  control={form.control}
+                  name="commissionRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Commission Rate (%) (Optional)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                            <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input type="number" step="1" placeholder="e.g., 25" {...field} value={field.value ?? ""} className="pl-10" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                  <FormField
                   control={form.control}
                   name="birthday"

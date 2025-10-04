@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, differenceInYears } from "date-fns";
-import { CalendarIcon, User, Mail, Phone, Hash, CreditCard } from "lucide-react";
+import { CalendarIcon, User, Mail, Phone, Hash, CreditCard, Percent } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -40,8 +40,9 @@ const driverFormSchema = z.object({
     required_error: "A birth date is required.",
   }),
   age: z.coerce.number().min(18, "Driver must be at least 18 years old."),
-  nationalId: z.string().min(1, "National ID is required."),
-  driversLicense: z.string().min(1, "Driver's License is required."),
+  nationalId: z.string().optional(),
+  driversLicense: z.string().optional(),
+  commissionRate: z.coerce.number().min(0, "Commission rate must be positive.").optional(),
 });
 
 type DriverFormValues = z.infer<typeof driverFormSchema>;
@@ -60,6 +61,7 @@ export default function NewDriverPage() {
       age: 18,
       nationalId: "",
       driversLicense: "",
+      commissionRate: 0,
     },
   });
 
@@ -107,7 +109,7 @@ export default function NewDriverPage() {
       <Card className="shadow-lg max-w-4xl mx-auto">
         <CardHeader>
             <CardTitle>Driver Details</CardTitle>
-            <CardDescription>All fields are required.</CardDescription>
+            <CardDescription>All fields are required unless marked optional.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -161,7 +163,22 @@ export default function NewDriverPage() {
                     </FormItem>
                   )}
                 />
-                <div></div>
+                <FormField
+                  control={form.control}
+                  name="commissionRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Commission Rate (%) (Optional)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                            <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input type="number" step="1" placeholder="e.g., 25" {...field} className="pl-10" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                  <FormField
                   control={form.control}
                   name="birthday"
@@ -192,11 +209,11 @@ export default function NewDriverPage() {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                fromYear={1950}
+                                fromYear={new Date().getFullYear() - 100}
                                 toYear={new Date().getFullYear() - 18}
                                 captionLayout="dropdown-buttons"
                                 disabled={(date) =>
-                                  date > new Date() || date < new Date("1900-01-01")
+                                  date > new Date(new Date().setFullYear(new Date().getFullYear() - 18)) || date < new Date("1920-01-01")
                                 }
                                 initialFocus
                             />
@@ -227,11 +244,11 @@ export default function NewDriverPage() {
                   name="nationalId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>National ID</FormLabel>
+                      <FormLabel>National ID (Optional)</FormLabel>
                       <FormControl>
                         <div className="relative">
                             <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="National ID Number" {...field} className="pl-10" />
+                            <Input placeholder="National ID Number" {...field} value={field.value ?? ""} className="pl-10" />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -243,11 +260,11 @@ export default function NewDriverPage() {
                   name="driversLicense"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Driver's License</FormLabel>
+                      <FormLabel>Driver's License (Optional)</FormLabel>
                       <FormControl>
                         <div className="relative">
                             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="License Number" {...field} className="pl-10"/>
+                            <Input placeholder="License Number" {...field} value={field.value ?? ""} className="pl-10"/>
                         </div>
                       </FormControl>
                       <FormMessage />
