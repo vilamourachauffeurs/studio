@@ -16,6 +16,8 @@ export type BookingStatus =
 
 export type PaymentType = "credit_card" | "account" | "cash";
 
+export type VehicleType = "Sedan" | "Minivan";
+
 export type User = {
   id: string;
   name: string;
@@ -35,6 +37,7 @@ export type Booking = {
   dropoffLocation:string;
   pickupTime: Timestamp | Date;
   pax: number; // Number of passengers
+  vehicleType: VehicleType;
   status: BookingStatus;
   driverId?: string;
   driver?: Driver;

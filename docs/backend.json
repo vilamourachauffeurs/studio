@@ -69,6 +69,14 @@
           "type": "number",
           "description": "The number of passengers."
         },
+        "vehicleType": {
+          "type": "string",
+          "description": "The type of vehicle required for the booking.",
+          "enum": [
+            "Sedan",
+            "Minivan"
+          ]
+        },
         "clientName": {
           "type": "string",
           "description": "The name of the client for whom the booking is made."
@@ -132,6 +140,7 @@
         "pickupLocation",
         "dropoffLocation",
         "pax",
+        "vehicleType",
         "createdById",
         "status",
         "cost",

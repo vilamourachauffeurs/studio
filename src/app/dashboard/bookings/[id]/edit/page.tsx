@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -42,7 +42,7 @@ import type { Partner, Booking } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const bookingFormSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required."),
@@ -51,6 +51,7 @@ const bookingFormSchema = z.object({
     required_error: "A date and time is required.",
   }),
   pax: z.coerce.number().min(1, "At least one passenger is required."),
+  vehicleType: z.enum(["Sedan", "Minivan"]),
   clientName: z.string().optional(),
   requestedBy: z.string().optional(),
   partnerId: z.string().optional(),
@@ -84,6 +85,7 @@ export default function EditBookingPage() {
         pickupLocation: "",
         dropoffLocation: "",
         pax: 1,
+        vehicleType: "Sedan",
         clientName: "",
         requestedBy: "",
         partnerId: "",
@@ -93,6 +95,16 @@ export default function EditBookingPage() {
         pickupTime: undefined,
     }
   });
+
+  const pax = form.watch("pax");
+
+  useEffect(() => {
+    if (pax > 4) {
+      form.setValue("vehicleType", "Minivan");
+    } else {
+      form.setValue("vehicleType", "Sedan");
+    }
+  }, [pax, form]);
 
   useEffect(() => {
     if (booking) {
@@ -110,6 +122,7 @@ export default function EditBookingPage() {
         clientName: booking.clientName || "",
         requestedBy: booking.requestedBy || "",
         notes: booking.notes || "",
+        vehicleType: booking.vehicleType || "Sedan",
       })
     }
   }, [booking, form])
@@ -291,22 +304,58 @@ export default function EditBookingPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="pax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Number of Passengers (PAX)</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input type="number" {...field} className="pl-10" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                 <div className="grid grid-cols-2 gap-8">
+                    <FormField
+                    control={form.control}
+                    name="pax"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Passengers (PAX)</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <Input type="number" {...field} className="pl-10" />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="vehicleType"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Vehicle Type</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex items-center space-x-4 pt-2"
+                            >
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="Sedan" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                Sedan
+                                </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="Minivan" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                Minivan
+                                </FormLabel>
+                            </FormItem>
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
                 <FormField
                   control={form.control}
                   name="requestedBy"
@@ -390,7 +439,7 @@ export default function EditBookingPage() {
                     control={form.control}
                     name="paymentType"
                     render={({ field }) => (
-                        <FormItem className="md:col-start-2">
+                        <FormItem>
                         <FormLabel>Payment Type</FormLabel>
                          <div className="relative">
                             <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -439,5 +488,3 @@ export default function EditBookingPage() {
     </div>
   );
 }
-
-    

@@ -1,11 +1,12 @@
 
 "use client";
 
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, setHours, setMinutes } from "date-fns";
-import { CalendarIcon, Euro, Users, Briefcase, MapPin, User, FileSignature } from "lucide-react";
+import { CalendarIcon, Euro, Users, Briefcase, MapPin, User, FileSignature, Car } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,7 @@ import type { Partner } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useCollection } from "@/firebase";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const bookingFormSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required."),
@@ -48,6 +50,7 @@ const bookingFormSchema = z.object({
     required_error: "A date and time is required.",
   }),
   pax: z.coerce.number().min(1, "At least one passenger is required."),
+  vehicleType: z.enum(["Sedan", "Minivan"]),
   clientName: z.string().optional(),
   requestedBy: z.string().optional(),
   partnerId: z.string().optional(),
@@ -82,6 +85,7 @@ export default function NewBookingPage() {
       pickupLocation: "",
       dropoffLocation: "",
       pax: 1,
+      vehicleType: "Sedan",
       clientName: "",
       requestedBy: "",
       partnerId: "",
@@ -91,6 +95,16 @@ export default function NewBookingPage() {
       pickupTime: new Date(),
     },
   });
+
+  const pax = form.watch("pax");
+
+  useEffect(() => {
+    if (pax > 4) {
+      form.setValue("vehicleType", "Minivan");
+    } else {
+      form.setValue("vehicleType", "Sedan");
+    }
+  }, [pax, form]);
 
   async function onSubmit(data: BookingFormValues) {
     if (!user || !userProfile) {
@@ -252,12 +266,13 @@ export default function NewBookingPage() {
                     </FormItem>
                   )}
                 />
+                <div className="grid grid-cols-2 gap-8">
                 <FormField
                   control={form.control}
                   name="pax"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Number of Passengers (PAX)</FormLabel>
+                      <FormLabel>Passengers (PAX)</FormLabel>
                       <FormControl>
                         <div className="relative">
                             <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -268,6 +283,41 @@ export default function NewBookingPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="vehicleType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vehicle Type</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex items-center space-x-4 pt-2"
+                        >
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="Sedan" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Sedan
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="Minivan" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Minivan
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                </div>
                 <FormField
                   control={form.control}
                   name="requestedBy"
@@ -351,7 +401,7 @@ export default function NewBookingPage() {
                     control={form.control}
                     name="paymentType"
                     render={({ field }) => (
-                        <FormItem className="md:col-start-2">
+                        <FormItem>
                         <FormLabel>Payment Type</FormLabel>
                          <div className="relative">
                             <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
