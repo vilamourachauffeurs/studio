@@ -6,9 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, differenceInYears } from "date-fns";
-import { CalendarIcon, User, Mail, Phone, Hash, CreditCard, KeyRound } from "lucide-react";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { CalendarIcon, User, Mail, Phone, Hash, CreditCard } from "lucide-react";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,20 +29,19 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useAuth } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
 
 const driverFormSchema = z.object({
   name: z.string().min(1, "Name is required."),
   email: z.string().email("Invalid email address."),
   phone: z.string().min(1, "Phone number is required."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
   birthday: z.date({
     required_error: "A birth date is required.",
   }),
   age: z.coerce.number().min(18, "Driver must be at least 18 years old."),
-  nationalId: z.string().optional(),
-  driversLicense: z.string().optional(),
+  nationalId: z.string().min(1, "National ID is required."),
+  driversLicense: z.string().min(1, "Driver's License is required."),
 });
 
 type DriverFormValues = z.infer<typeof driverFormSchema>;
@@ -51,7 +49,6 @@ type DriverFormValues = z.infer<typeof driverFormSchema>;
 export default function NewDriverPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const auth = useAuth();
   const router = useRouter();
   
   const form = useForm<DriverFormValues>({
@@ -60,7 +57,6 @@ export default function NewDriverPage() {
       name: "",
       email: "",
       phone: "",
-      password: "",
       age: 18,
       nationalId: "",
       driversLicense: "",
@@ -77,69 +73,24 @@ export default function NewDriverPage() {
 
 
   async function onSubmit(data: DriverFormValues) {
-    const adminUser = auth.currentUser;
-    if (!adminUser || !adminUser.email) {
-        toast({
-            title: "Error",
-            description: "Admin user not found. Please log in again.",
-            variant: "destructive",
-        });
-        return;
-    }
-    const adminEmail = adminUser.email;
-    const adminPassword = "password"; // This should be handled more securely in a real app
-
     try {
-        // 1. Create Firebase Auth user for the new driver
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-        const newUser = userCredential.user;
-
-        // 2. Re-authenticate as admin immediately
-        await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
-
-        // 3. Create driver document in 'drivers' collection
-        const driverDocRef = await addDoc(collection(firestore, "drivers"), {
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            birthday: data.birthday,
-            age: data.age,
-            nationalId: data.nationalId || "",
-            driversLicense: data.driversLicense || "",
+        const docRef = await addDoc(collection(firestore, "drivers"), {
+            ...data,
             status: "offline", // Default status
             avatarUrl: `https://picsum.photos/seed/${data.name.replace(/\s/g, '')}/100/100`, // Placeholder avatar
             createdAt: serverTimestamp(),
-            uid: newUser.uid, // Link to the auth user
-        });
-
-        // 4. Create user profile in 'users' collection for the new driver
-        await setDoc(doc(firestore, "users", newUser.uid), {
-            id: newUser.uid,
-            email: newUser.email,
-            name: data.name,
-            phone: data.phone,
-            role: 'driver',
-            relatedId: driverDocRef.id,
         });
         
         toast({
             title: "Driver Created!",
-            description: `${data.name} has been added to the system and their user account is ready.`,
+            description: `${data.name} has been added to the system.`,
         });
         router.push("/dashboard/drivers");
-
-    } catch (error: any) {
+    } catch (error) {
         console.error("Error creating driver:", error);
-        
-        // If user creation failed, the admin is still logged in.
-        // If it succeeded but something else failed, we need to log the admin back in.
-        if (auth.currentUser?.email !== adminEmail) {
-            await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
-        }
-
         toast({
             title: "Error",
-            description: "There was a problem creating the driver. " + (error.code === 'auth/email-already-in-use' ? 'This email is already registered.' : error.message),
+            description: "There was a problem creating the driver.",
             variant: "destructive"
         })
     }
@@ -150,13 +101,13 @@ export default function NewDriverPage() {
        <div>
             <h1 className="text-3xl font-headline">Add New Driver</h1>
             <p className="text-muted-foreground">
-                Fill out the form below to add a new driver and create their login credentials.
+                Fill out the form below to add a new driver to the system.
             </p>
         </div>
       <Card className="shadow-lg max-w-4xl mx-auto">
         <CardHeader>
             <CardTitle>Driver Details</CardTitle>
-            <CardDescription>Fields marked with an asterisk (*) are required.</CardDescription>
+            <CardDescription>All fields are required.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -167,7 +118,7 @@ export default function NewDriverPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name *</FormLabel>
+                      <FormLabel>Full Name</FormLabel>
                       <FormControl>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -183,7 +134,7 @@ export default function NewDriverPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email *</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                          <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -199,7 +150,7 @@ export default function NewDriverPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number *</FormLabel>
+                      <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                          <div className="relative">
                             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -210,28 +161,13 @@ export default function NewDriverPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password *</FormLabel>
-                      <FormControl>
-                         <div className="relative">
-                            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input type="password" placeholder="••••••••" {...field} className="pl-10" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div></div>
                  <FormField
                   control={form.control}
                   name="birthday"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Date of Birth *</FormLabel>
+                      <FormLabel>Date of Birth</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
                             <FormControl>
@@ -256,7 +192,7 @@ export default function NewDriverPage() {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                fromYear={new Date().getFullYear() - 100}
+                                fromYear={1950}
                                 toYear={new Date().getFullYear() - 18}
                                 captionLayout="dropdown-buttons"
                                 disabled={(date) =>
@@ -291,11 +227,11 @@ export default function NewDriverPage() {
                   name="nationalId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>National ID (Optional)</FormLabel>
+                      <FormLabel>National ID</FormLabel>
                       <FormControl>
                         <div className="relative">
                             <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="National ID Number" {...field} value={field.value ?? ""} className="pl-10" />
+                            <Input placeholder="National ID Number" {...field} className="pl-10" />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -307,11 +243,11 @@ export default function NewDriverPage() {
                   name="driversLicense"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Driver's License (Optional)</FormLabel>
+                      <FormLabel>Driver's License</FormLabel>
                       <FormControl>
                         <div className="relative">
                             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="License Number" {...field} value={field.value ?? ""} className="pl-10"/>
+                            <Input placeholder="License Number" {...field} className="pl-10"/>
                         </div>
                       </FormControl>
                       <FormMessage />

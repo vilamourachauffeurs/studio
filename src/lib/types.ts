@@ -59,8 +59,8 @@ export type Driver = {
   status: "online" | "offline";
   birthday: Timestamp | Date;
   age: number;
-  nationalId: string;
-  driversLicense: string;
+  nationalId?: string;
+  driversLicense?: string;
   currentJobId?: string;
   performance?: {
     completedJobs: number;
