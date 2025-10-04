@@ -13,7 +13,7 @@ import { BookingStatus, Booking } from "./types";
 import { doc, updateDoc } from "firebase/firestore";
 import { firestore } from "@/firebase/server";
 import { format } from "date-fns";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 
 export async function getDriverSuggestion(
@@ -69,6 +69,7 @@ export async function createBookingWithSequentialId(bookingData: Omit<Booking, '
             
             transaction.set(newBookingRef, {
                 ...bookingData,
+                pickupTime: Timestamp.fromDate(new Date(bookingData.pickupTime)),
                 id: newBookingRef.id,
                 bookingId: bookingId,
                 createdAt: FieldValue.serverTimestamp()
