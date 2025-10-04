@@ -10,9 +10,10 @@ import {
   type SuggestDriverForBookingInput,
 } from "@/ai/flows/suggest-driver-for-booking";
 import { BookingStatus, Booking } from "./types";
-import { doc, updateDoc, runTransaction, serverTimestamp, collection, DocumentReference, Firestore } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { firestore } from "@/firebase/server";
 import { format } from "date-fns";
+import { FieldValue } from "firebase-admin/firestore";
 
 
 export async function getDriverSuggestion(
@@ -39,8 +40,8 @@ export async function getNotesSummary(input: SummarizeClientNotesInput) {
 
 export async function updateBookingStatus(bookingId: string, status: BookingStatus) {
     try {
-        const bookingRef = doc(firestore, "bookings", bookingId);
-        await updateDoc(bookingRef, { status });
+        const bookingRef = firestore.collection("bookings").doc(bookingId);
+        await bookingRef.update({ status });
         return { success: true };
     } catch (error) {
         console.error("Error updating booking status:", error);
@@ -50,27 +51,27 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
 
 export async function createBookingWithSequentialId(bookingData: Omit<Booking, 'id' | 'bookingId' | 'createdAt'>) {
     try {
-        const newBookingId = await runTransaction(firestore, async (transaction) => {
-            const newBookingRef = doc(collection(firestore, 'bookings'));
-            
+        const newBookingId = await firestore.runTransaction(async (transaction) => {
             const today = format(new Date(), 'yyMMdd');
-            const counterRef = doc(firestore, 'counters', today);
+            const counterRef = firestore.collection('counters').doc(today);
             const counterDoc = await transaction.get(counterRef);
 
             let newNumber = 1;
-            if (counterDoc.exists()) {
-                newNumber = counterDoc.data().lastNumber + 1;
+            if (counterDoc.exists) {
+                newNumber = (counterDoc.data()?.lastNumber || 0) + 1;
             }
 
             const bookingId = `${today}${(newNumber).toString().padStart(3, '0')}`;
             
             transaction.set(counterRef, { lastNumber: newNumber });
             
+            const newBookingRef = firestore.collection('bookings').doc();
+            
             transaction.set(newBookingRef, {
                 ...bookingData,
                 id: newBookingRef.id,
                 bookingId: bookingId,
-                createdAt: serverTimestamp()
+                createdAt: FieldValue.serverTimestamp()
             });
 
             return bookingId;
