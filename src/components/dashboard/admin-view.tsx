@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useState } from "react";
 import { DollarSign, Users, Book, Car } from "lucide-react";
 import { StatsCard } from "./stats-card";
 import { BookingsChart } from "./bookings-chart";
@@ -13,6 +15,7 @@ import type { Booking } from "@/lib/types";
 
 
 export default function AdminView() {
+  const [timeRange, setTimeRange] = useState("Monthly");
   const firestore = useFirestore();
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
 
@@ -52,8 +55,14 @@ export default function AdminView() {
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
         <Card className="col-span-1 lg:col-span-4 shadow-md">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="font-headline">Overview</CardTitle>
+                 <div className="flex items-center gap-2">
+                    <Button variant={timeRange === 'Daily' ? 'default' : 'outline'} size="sm" onClick={() => setTimeRange('Daily')}>Daily</Button>
+                    <Button variant={timeRange === 'Weekly' ? 'default' : 'outline'} size="sm" onClick={() => setTimeRange('Weekly')}>Weekly</Button>
+                    <Button variant={timeRange === 'Monthly' ? 'default' : 'outline'} size="sm" onClick={() => setTimeRange('Monthly')}>Monthly</Button>
+                    <Button variant={timeRange === 'Yearly' ? 'default' : 'outline'} size="sm" onClick={() => setTimeRange('Yearly')}>Yearly</Button>
+                </div>
             </CardHeader>
             <CardContent>
                 <BookingsChart />
