@@ -117,7 +117,7 @@ export default function NewDriverPage() {
         console.error("Error creating driver:", error);
         toast({
             title: "Error",
-            description: "There was a problem creating the driver. " + (error.message.includes('email-already-in-use') ? 'This email is already registered.' : error.message),
+            description: "There was a problem creating the driver. " + (error.code === 'auth/email-already-in-use' ? 'This email is already registered.' : error.message),
             variant: "destructive"
         })
     }
@@ -273,7 +273,7 @@ export default function NewDriverPage() {
                       <FormControl>
                         <div className="relative">
                             <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="National ID Number" {...field} />
+                            <Input placeholder="National ID Number" {...field} value={field.value ?? ""} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -289,7 +289,7 @@ export default function NewDriverPage() {
                       <FormControl>
                         <div className="relative">
                             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="License Number" {...field} />
+                            <Input placeholder="License Number" {...field} value={field.value ?? ""} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -308,3 +308,5 @@ export default function NewDriverPage() {
     </div>
   );
 }
+
+    
