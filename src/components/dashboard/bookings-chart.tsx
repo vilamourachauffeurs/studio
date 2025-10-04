@@ -1,24 +1,8 @@
+
 "use client"
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
-
-const chartData = [
-  { month: "January", bookings: 186, revenue: 8000 },
-  { month: "February", bookings: 305, revenue: 9500 },
-  { month: "March", bookings: 237, revenue: 7000 },
-  { month: "April", bookings: 273, revenue: 11000 },
-  { month: "May", bookings: 209, revenue: 9800 },
-  { month: "June", bookings: 214, revenue: 12000 },
-]
 
 const chartConfig = {
   bookings: {
@@ -26,18 +10,32 @@ const chartConfig = {
     color: "hsl(var(--primary))",
   },
   revenue: {
-    label: "Revenue",
+    label: "Revenue (€)",
     color: "hsl(var(--accent))",
   },
 }
 
-export function BookingsChart() {
+type ChartData = {
+  name: string;
+  bookings: number;
+  revenue: number;
+}
+
+export function BookingsChart({ data }: { data: ChartData[] }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-80 text-muted-foreground">
+        No data available for this period.
+      </div>
+    )
+  }
+
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full h-80">
-      <BarChart accessibilityLayer data={chartData}>
+      <BarChart accessibilityLayer data={data}>
         <CartesianGrid vertical={false} />
         <XAxis
-          dataKey="month"
+          dataKey="name"
           tickLine={false}
           tickMargin={10}
           axisLine={false}

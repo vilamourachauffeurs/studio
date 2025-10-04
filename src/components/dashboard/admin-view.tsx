@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DollarSign, Users, Book, Car } from "lucide-react";
 import { StatsCard } from "./stats-card";
 import { BookingsChart } from "./bookings-chart";
@@ -10,13 +10,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
 import type { Booking } from "@/lib/types";
+import { subDays, subMonths, subWeeks, subYears, format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval } from "date-fns";
 
+type TimeRange = "Daily" | "Weekly" | "Monthly" | "Yearly";
+type ChartData = { name: string; bookings: number; revenue: number };
 
 export default function AdminView() {
-  const [timeRange, setTimeRange] = useState("Monthly");
+  const [timeRange, setTimeRange] = useState<TimeRange>("Monthly");
   const firestore = useFirestore();
+  
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
 
   const recentBookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, orderBy('createdAt', 'desc'), limit(5)), [bookingsCollectionRef]);
@@ -24,20 +28,122 @@ export default function AdminView() {
 
   const pendingBookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, where('status', '==', 'pending_admin')), [bookingsCollectionRef]);
   const { data: pendingBookings } = useCollection<Booking>(pendingBookingsQuery);
+  
+  const allBookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, orderBy('pickupTime', 'desc')), [bookingsCollectionRef]);
+  const { data: allBookings } = useCollection<Booking>(allBookingsQuery);
+
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalBookings, setTotalBookings] = useState(0);
+
+  useEffect(() => {
+    if (!allBookings) return;
+
+    const now = new Date();
+    let startDate: Date;
+
+    switch (timeRange) {
+        case "Daily":
+            startDate = subDays(now, 1);
+            break;
+        case "Weekly":
+            startDate = startOfWeek(subWeeks(now, 1));
+            break;
+        case "Monthly":
+            startDate = startOfMonth(subMonths(now, 1));
+            break;
+        case "Yearly":
+            startDate = startOfYear(subYears(now, 1));
+            break;
+        default:
+            startDate = subMonths(now, 1);
+    }
+    
+    const filteredBookings = allBookings.filter(booking => {
+        const pickupDate = booking.pickupTime instanceof Timestamp ? booking.pickupTime.toDate() : new Date(booking.pickupTime);
+        return pickupDate >= startDate && pickupDate <= now;
+    });
+
+    const newTotalBookings = filteredBookings.length;
+    const newTotalRevenue = filteredBookings.reduce((sum, booking) => sum + booking.cost, 0);
+
+    setTotalBookings(newTotalBookings);
+    setTotalRevenue(newTotalRevenue);
+    
+    let processedData: { [key: string]: { bookings: number; revenue: number } } = {};
+
+     if (timeRange === "Yearly") {
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      processedData = monthNames.reduce((acc, month) => ({ ...acc, [month]: { bookings: 0, revenue: 0 } }), {});
+
+      filteredBookings.forEach(booking => {
+        const pickupDate = booking.pickupTime instanceof Timestamp ? booking.pickupTime.toDate() : new Date(booking.pickupTime);
+        const month = format(pickupDate, "MMM");
+        if (processedData[month]) {
+            processedData[month].bookings++;
+            processedData[month].revenue += booking.cost;
+        }
+      });
+    } else if (timeRange === "Monthly") {
+        const daysInMonth = eachDayOfInterval({ start: startDate, end: now });
+        processedData = daysInMonth.reduce((acc, day) => ({ ...acc, [format(day, 'dd')]: { bookings: 0, revenue: 0 } }), {});
+
+        filteredBookings.forEach(booking => {
+            const pickupDate = booking.pickupTime instanceof Timestamp ? booking.pickupTime.toDate() : new Date(booking.pickupTime);
+            const day = format(pickupDate, "dd");
+             if (processedData[day]) {
+                processedData[day].bookings++;
+                processedData[day].revenue += booking.cost;
+            }
+        });
+    } else if (timeRange === 'Weekly') {
+        const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        processedData = weekDays.reduce((acc, day) => ({ ...acc, [day]: { bookings: 0, revenue: 0 } }), {});
+
+        filteredBookings.forEach(booking => {
+            const pickupDate = booking.pickupTime instanceof Timestamp ? booking.pickupTime.toDate() : new Date(booking.pickupTime);
+            const dayOfWeek = format(pickupDate, "E");
+            if (processedData[dayOfWeek]) {
+                processedData[dayOfWeek].bookings++;
+                processedData[dayOfWeek].revenue += booking.cost;
+            }
+        });
+    } else if (timeRange === 'Daily') {
+        processedData = Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`).reduce((acc, hour) => ({ ...acc, [hour]: { bookings: 0, revenue: 0 } }), {});
+        filteredBookings.forEach(booking => {
+            const pickupDate = booking.pickupTime instanceof Timestamp ? booking.pickupTime.toDate() : new Date(booking.pickupTime);
+            const hour = `${format(pickupDate, "HH")}:00`;
+             if (processedData[hour]) {
+                processedData[hour].bookings++;
+                processedData[hour].revenue += booking.cost;
+            }
+        });
+    }
+
+
+    const newChartData = Object.keys(processedData).map(key => ({
+      name: key,
+      bookings: processedData[key].bookings,
+      revenue: processedData[key].revenue
+    }));
+    
+    setChartData(newChartData);
+
+  }, [allBookings, timeRange]);
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Revenue"
-          value="$45,231.89"
-          description="+20.1% from last month"
+          value={`$${totalRevenue.toFixed(2)}`}
+          description={`In the last ${timeRange.toLowerCase().slice(0, -2)}`}
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
         <StatsCard
           title="Total Bookings"
-          value="2,350"
-          description="+180.1% from last month"
+          value={totalBookings.toString()}
+          description={`In the last ${timeRange.toLowerCase().slice(0, -2)}`}
           icon={<Book className="h-4 w-4 text-muted-foreground" />}
         />
         <StatsCard
@@ -55,8 +161,13 @@ export default function AdminView() {
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
         <Card className="col-span-1 lg:col-span-4 shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="font-headline">Overview</CardTitle>
+            <CardHeader className="flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="font-headline">Overview</CardTitle>
+                  <CardDescription>
+                    Bookings and revenue overview for the selected time range.
+                  </CardDescription>
+                </div>
                  <div className="flex items-center gap-2">
                     <Button variant={timeRange === 'Daily' ? 'default' : 'outline'} size="sm" onClick={() => setTimeRange('Daily')}>Daily</Button>
                     <Button variant={timeRange === 'Weekly' ? 'default' : 'outline'} size="sm" onClick={() => setTimeRange('Weekly')}>Weekly</Button>
@@ -65,7 +176,7 @@ export default function AdminView() {
                 </div>
             </CardHeader>
             <CardContent>
-                <BookingsChart />
+                <BookingsChart data={chartData} />
             </CardContent>
         </Card>
          <Card className="col-span-1 lg:col-span-3 shadow-md">
