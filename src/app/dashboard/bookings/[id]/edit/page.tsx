@@ -58,6 +58,7 @@ const bookingFormSchema = z.object({
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
   paymentType: z.enum(["credit_card", "account", "cash"]),
   notes: z.string().optional(),
+  bookingType: z.enum(["rightNow", "inAdvance"]),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
@@ -93,10 +94,12 @@ export default function EditBookingPage() {
         paymentType: "account",
         notes: "",
         pickupTime: undefined,
+        bookingType: "inAdvance",
     }
   });
 
   const pax = form.watch("pax");
+  const bookingType = form.watch("bookingType");
 
   useEffect(() => {
     if (pax > 4) {
@@ -105,6 +108,14 @@ export default function EditBookingPage() {
       form.setValue("vehicleType", "Sedan");
     }
   }, [pax, form]);
+
+  useEffect(() => {
+    if (bookingType === 'rightNow') {
+        const currentTime = form.getValues('pickupTime') || new Date();
+        form.setValue('pickupTime', new Date(currentTime));
+    }
+  }, [bookingType, form]);
+
 
   useEffect(() => {
     if (booking) {
@@ -123,6 +134,7 @@ export default function EditBookingPage() {
         requestedBy: booking.requestedBy || "",
         notes: booking.notes || "",
         vehicleType: booking.vehicleType || "Sedan",
+        bookingType: booking.bookingType || "inAdvance",
       })
     }
   }, [booking, form])
@@ -199,6 +211,40 @@ export default function EditBookingPage() {
               <div className="grid md:grid-cols-2 gap-8">
                 <FormField
                   control={form.control}
+                  name="bookingType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3 md:col-span-2">
+                      <FormLabel>Booking Type</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="inAdvance" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              In Advance
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="rightNow" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Right Now (Urgent)
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="pickupLocation"
                   render={({ field }) => (
                     <FormItem>
@@ -242,8 +288,10 @@ export default function EditBookingPage() {
                                 variant={"outline"}
                                 className={cn(
                                     "w-full justify-start text-left font-normal",
-                                    !field.value && "text-muted-foreground"
+                                    !field.value && "text-muted-foreground",
+                                    bookingType === 'rightNow' && "opacity-50 cursor-not-allowed"
                                 )}
+                                disabled={bookingType === 'rightNow'}
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
                                 {field.value ? (

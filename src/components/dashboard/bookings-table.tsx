@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -15,6 +16,7 @@ import {
   Pencil,
   Filter,
   Calendar as CalendarIcon,
+  Zap,
 } from "lucide-react";
 import { format, isSameDay, startOfDay } from "date-fns";
 
@@ -230,14 +232,22 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
           </div>
         </TableCell>
         <TableCell onClick={(e) => e.stopPropagation()}>
-          <Badge
-            onClick={() => setIsChangeStatusOpen(true)}
-            className={cn("capitalize cursor-pointer", statusStyles[booking.status])}
-            variant="outline"
-          >
-            <Pencil className="mr-2 h-3 w-3" />
-            {booking.status.replace(/_/g, " ")}
-          </Badge>
+            <div className="flex items-center gap-2">
+                <Badge
+                    onClick={() => setIsChangeStatusOpen(true)}
+                    className={cn("capitalize cursor-pointer", statusStyles[booking.status])}
+                    variant="outline"
+                >
+                    <Pencil className="mr-2 h-3 w-3" />
+                    {booking.status.replace(/_/g, " ")}
+                </Badge>
+                {booking.bookingType === 'rightNow' && (
+                     <Badge variant="destructive" className="animate-pulse">
+                        <Zap className="mr-1 h-3 w-3" />
+                        URGENT
+                    </Badge>
+                )}
+            </div>
         </TableCell>
         <TableCell onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2">
@@ -467,4 +477,5 @@ export default function BookingsTable({
     </div>
   );
 }
+
 

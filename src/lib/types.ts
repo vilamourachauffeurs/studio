@@ -18,6 +18,8 @@ export type PaymentType = "credit_card" | "account" | "cash";
 
 export type VehicleType = "Sedan" | "Minivan";
 
+export type BookingType = "rightNow" | "inAdvance";
+
 export type User = {
   id: string;
   name: string;
@@ -45,6 +47,7 @@ export type Booking = {
   notes: string;
   cost: number;
   paymentType: PaymentType;
+  bookingType: BookingType;
   // The following fields are likely calculated or for internal accounting
   // and may not need to be on the primary booking object.
   // We can add them later if needed.
@@ -102,4 +105,3 @@ export type Notification = {
   sentAt: Date;
   message: string;
 };
-

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, setHours, setMinutes } from "date-fns";
-import { CalendarIcon, Euro, Users, Briefcase, MapPin, User, FileSignature, Car } from "lucide-react";
+import { CalendarIcon, Euro, Users, Briefcase, MapPin, User, FileSignature, Car, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +57,7 @@ const bookingFormSchema = z.object({
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
   paymentType: z.enum(["credit_card", "account", "cash"]),
   notes: z.string().optional(),
+  bookingType: z.enum(["rightNow", "inAdvance"]),
 });
 
 type BookingFormValues = z.infer<typeof bookingFormSchema>;
@@ -93,10 +94,12 @@ export default function NewBookingPage() {
       paymentType: "account",
       notes: "",
       pickupTime: new Date(),
+      bookingType: "inAdvance",
     },
   });
 
   const pax = form.watch("pax");
+  const bookingType = form.watch("bookingType");
 
   useEffect(() => {
     if (pax > 4) {
@@ -105,6 +108,12 @@ export default function NewBookingPage() {
       form.setValue("vehicleType", "Sedan");
     }
   }, [pax, form]);
+
+    useEffect(() => {
+        if (bookingType === 'rightNow') {
+            form.setValue('pickupTime', new Date());
+        }
+    }, [bookingType, form]);
 
   async function onSubmit(data: BookingFormValues) {
     if (!user || !userProfile) {
@@ -160,6 +169,40 @@ export default function NewBookingPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <div className="grid md:grid-cols-2 gap-8">
+                 <FormField
+                  control={form.control}
+                  name="bookingType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3 md:col-span-2">
+                      <FormLabel>Booking Type</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="inAdvance" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              In Advance
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="rightNow" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Right Now (Urgent)
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="pickupLocation"
@@ -205,8 +248,10 @@ export default function NewBookingPage() {
                                 variant={"outline"}
                                 className={cn(
                                     "w-full justify-start text-left font-normal",
-                                    !field.value && "text-muted-foreground"
+                                    !field.value && "text-muted-foreground",
+                                    bookingType === 'rightNow' && "opacity-50 cursor-not-allowed"
                                 )}
+                                disabled={bookingType === 'rightNow'}
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
                                 {field.value ? (

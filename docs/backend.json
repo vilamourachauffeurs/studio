@@ -132,6 +132,14 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the booking was created."
+        },
+        "bookingType": {
+            "type": "string",
+            "description": "The type of booking.",
+            "enum": [
+                "rightNow",
+                "inAdvance"
+            ]
         }
       },
       "required": [
@@ -145,7 +153,8 @@
         "status",
         "cost",
         "paymentType",
-        "createdAt"
+        "createdAt",
+        "bookingType"
       ]
     },
     "Driver": {
