@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -21,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUser, useAuth } from "@/firebase";
 import Logo from "../logo";
-import DashboardSidebar from "./sidebar";
+import { MobileSheet } from "./sidebar";
 import { signOut } from "firebase/auth";
 
 
@@ -38,37 +39,43 @@ export default function DashboardHeader() {
 
 
   const getPageTitle = () => {
+    const path = pathname.split('/').pop();
+    const title = path ? path.charAt(0).toUpperCase() + path.slice(1) : "Dashboard";
+    if (pathname.includes('/bookings/') && path !== 'bookings') return 'Booking Details';
     if (pathname.startsWith('/dashboard/bookings')) return 'Bookings';
     if (pathname.startsWith('/dashboard/drivers')) return 'Drivers';
     if (pathname.startsWith('/dashboard/partners')) return 'Partners';
     if (pathname.startsWith('/dashboard/clients')) return 'Clients';
     if (pathname.startsWith('/dashboard/reports')) return 'Reports';
-    return "Dashboard";
+    if (pathname === '/dashboard') return 'Dashboard';
+    return title;
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card px-4 sm:px-6">
         <div className="md:hidden">
-            <DashboardSidebar />
+            <MobileSheet />
         </div>
-        <div className="relative ml-auto flex-1 md:grow-0">
+        <div className="flex-1">
+             <h1 className="font-semibold text-lg">{getPageTitle()}</h1>
+        </div>
+        <div className="relative ml-auto flex-1 md:grow-0 hidden">
             {/* Search can be implemented later */}
-            {/* <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search..."
               className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-            /> */}
+            />
         </div>
-        <h1 className="flex-1 text-xl font-headline hidden md:block">{getPageTitle()}</h1>
         <Button variant="outline" size="icon" className="h-8 w-8">
             <Bell className="h-4 w-4" />
             <span className="sr-only">Toggle notifications</span>
         </Button>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
-                <Avatar>
+            <Button variant="outline" size="icon" className="overflow-hidden rounded-full h-8 w-8">
+                <Avatar className="h-8 w-8">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} />
                     <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>

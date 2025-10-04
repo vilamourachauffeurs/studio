@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -41,7 +42,7 @@ function NavLink({
   label: string;
 }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const isActive = pathname.startsWith(href) && (href !== "/dashboard" || pathname === href);
   return (
     <Link
       href={href}
@@ -76,7 +77,7 @@ function SidebarNav() {
 
 function DesktopSidebar() {
   return (
-    <aside className="hidden border-r bg-card md:block">
+    <aside className="hidden border-r bg-card md:block w-64">
       <div className="flex h-full max-h-screen flex-col gap-2">
         <div className="flex h-16 items-center border-b px-6">
           <Logo />
@@ -89,20 +90,22 @@ function DesktopSidebar() {
   );
 }
 
-function MobileSheet() {
+export function MobileSheet() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                <Button variant="outline" size="icon" className="shrink-0 md:hidden h-8 w-8">
                     <PanelLeft className="h-5 w-5" />
                     <span className="sr-only">Toggle navigation menu</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
+            <SheetContent side="left" className="flex flex-col w-64 p-0">
                 <div className="flex h-16 items-center border-b px-6">
                   <Logo />
                 </div>
-                <SidebarNav />
+                <div className="flex-1 overflow-auto py-2">
+                    <SidebarNav />
+                </div>
             </SheetContent>
         </Sheet>
     )
@@ -110,11 +113,6 @@ function MobileSheet() {
 
 export default function DashboardSidebar() {
     return (
-        <>
-            <DesktopSidebar />
-            <div className="md:hidden">
-              <MobileSheet />
-            </div>
-        </>
+        <DesktopSidebar />
     );
 }

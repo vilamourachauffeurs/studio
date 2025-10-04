@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -29,11 +30,11 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-screen w-full bg-muted/40">
       <DashboardSidebar />
       <div className="flex flex-1 flex-col">
         <DashboardHeader />
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>
