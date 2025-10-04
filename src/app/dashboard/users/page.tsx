@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
+import { collection, query, doc } from "firebase/firestore";
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -16,13 +16,30 @@ import { cn } from "@/lib/utils";
 export default function UsersPage() {
     const firestore = useFirestore();
     const router = useRouter();
-    const usersCollectionRef = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
-    const usersQuery = useMemoFirebase(() => query(usersCollectionRef), [usersCollectionRef]);
-    const { data: users, isLoading } = useCollection<User>(usersQuery);
+    const { user: authUser, isUserLoading: isAuthLoading } = useUser();
+
+    const userDocRef = useMemoFirebase(() => authUser ? doc(firestore, `users/${authUser.uid}`) : null, [authUser, firestore]);
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
+
+    const isAdmin = userProfile && (userProfile as any).role === 'admin';
+
+    const usersCollectionRef = useMemoFirebase(() => isAdmin ? collection(firestore, 'users') : null, [firestore, isAdmin]);
+    const usersQuery = useMemoFirebase(() => usersCollectionRef ? query(usersCollectionRef) : null, [usersCollectionRef]);
+    const { data: users, isLoading: areUsersLoading } = useCollection<User>(usersQuery);
+
+    const isLoading = isAuthLoading || isProfileLoading || areUsersLoading;
 
     const handleRowClick = (userId: string) => {
         router.push(`/dashboard/users/${userId}`);
     };
+
+    if (!isProfileLoading && !isAdmin) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <p className="text-destructive">You do not have permission to view this page.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
