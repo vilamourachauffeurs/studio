@@ -80,8 +80,8 @@ export default function EditDriverPage() {
       form.reset({
         ...driver,
         birthday: birthdayDate,
-        nationalId: driver.nationalId || "",
-        driversLicense: driver.driversLicense || "",
+        nationalId: driver.nationalId ?? "",
+        driversLicense: driver.driversLicense ?? "",
       });
     }
   }, [driver, form]);

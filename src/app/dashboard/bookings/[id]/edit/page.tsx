@@ -130,9 +130,9 @@ export default function EditBookingPage() {
         ...booking,
         pickupTime: pickupTimeDate,
         partnerId: booking.partnerId || "",
-        clientName: booking.clientName || "",
-        requestedBy: booking.requestedBy || "",
-        notes: booking.notes || "",
+        clientName: booking.clientName ?? "",
+        requestedBy: booking.requestedBy ?? "",
+        notes: booking.notes ?? "",
         vehicleType: booking.vehicleType || "Sedan",
         bookingType: booking.bookingType || "inAdvance",
       })
@@ -507,3 +507,5 @@ export default function EditBookingPage() {
     </div>
   );
 }
+
+    
