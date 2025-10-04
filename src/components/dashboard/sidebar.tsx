@@ -24,6 +24,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 
 const NAV_ITEMS = [
@@ -31,7 +32,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/bookings", label: "Bookings", icon: Book, roles: ["admin", "partner", "driver"] },
   { href: "/dashboard/drivers", label: "Drivers", icon: Car, roles: ["admin"] },
   { href: "/dashboard/partners", label: "Partners", icon: Briefcase, roles: ["admin"] },
-  { href: "/dashboard/operators", label: "Operators", icon: Briefcase, roles: ["admin"] },
+  { href: "/dashboard/operators", label: "Operators", icon: Hotel, roles: ["admin"] },
   { href: "/dashboard/clients", label: "Clients", icon: Users, roles: ["admin"] },
   { href: "/dashboard/reports", label: "Reports", icon: FileText, roles: ["admin"] },
   { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin", "partner", "driver"] },
