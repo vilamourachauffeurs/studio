@@ -294,8 +294,7 @@ export default function EditBookingPage() {
                                 onSelect={(date) => {
                                     const currentValue = field.value || new Date();
                                     if (!date) return;
-                                    const newDate = new Date(currentValue.getTime());
-                                    newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                                    const newDate = setMinutes(setHours(date, currentValue.getHours()), currentValue.getMinutes());
                                     field.onChange(newDate);
                                 }}
                                 disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
