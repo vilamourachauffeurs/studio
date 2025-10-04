@@ -35,13 +35,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
+import { useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 import type { Partner } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useCollection } from "@/firebase";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { createBookingWithSequentialId } from "@/lib/actions";
 
 const bookingFormSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required."),
@@ -78,8 +79,6 @@ export default function NewBookingPage() {
   const partnersCollectionRef = useMemoFirebase(() => collection(firestore, 'partners'), [firestore]);
   const { data: partners } = useCollection<Partner>(partnersCollectionRef);
   
-  const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
-
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -129,21 +128,21 @@ export default function NewBookingPage() {
     const isAdmin = userProfile.role === 'admin';
     const bookingStatus = isAdmin ? 'approved' : 'pending_admin';
 
-    try {
-      addDocumentNonBlocking(bookingsCollectionRef, {
-          ...data,
-          status: bookingStatus,
-          createdById: user.uid,
-          createdAt: serverTimestamp(),
-      });
+    const result = await createBookingWithSequentialId({
+        ...data,
+        status: bookingStatus,
+        createdById: user.uid,
+    });
 
+
+    if (result.success) {
       toast({
         title: "Booking Created!",
-        description: `The new booking has been saved with status: ${bookingStatus.replace('_', ' ')}.`,
+        description: `Booking #${result.bookingId} has been saved with status: ${bookingStatus.replace('_', ' ')}.`,
       });
       router.push("/dashboard/bookings");
-    } catch (error) {
-        console.error("Error creating booking:", error);
+    } else {
+        console.error("Error creating booking:", result.error);
         toast({
             title: "Error",
             description: "There was a problem creating the booking.",

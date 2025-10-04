@@ -30,6 +30,7 @@ export type User = {
 
 export type Booking = {
   id: string;
+  bookingId: string;
   clientName?: string;
   createdById: string; // User ID of admin or partner
   requestedBy?: string; // Name of person requesting booking (e.g. concierge)

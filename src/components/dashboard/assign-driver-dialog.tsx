@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -50,7 +51,7 @@ export function AssignDriverDialog({
     const result = await getDriverSuggestion({
       pickupLocation: booking.pickupLocation,
       dropoffLocation: booking.dropoffLocation,
-      pickupTime: booking.pickupTime.toISOString(),
+      pickupTime: typeof booking.pickupTime === 'string' ? booking.pickupTime : booking.pickupTime.toISOString(),
       notes: booking.notes,
     });
     setIsLoading(false);
@@ -79,7 +80,7 @@ export function AssignDriverDialog({
     // Here you would typically call an action to update the booking
     toast({
         title: "Driver Assigned!",
-        description: `${drivers.find(d => d.id === selectedDriver)?.name} has been assigned to booking #${booking.id}.`
+        description: `${drivers.find(d => d.id === selectedDriver)?.name} has been assigned to booking #${booking.bookingId}.`
     });
     onOpenChange(false);
   };
@@ -90,7 +91,7 @@ export function AssignDriverDialog({
         <DialogHeader>
           <DialogTitle className="font-headline">Assign Driver</DialogTitle>
           <DialogDescription>
-            Assign a driver to booking #{booking.id}. Use our AI to get a
+            Assign a driver to booking #{booking.bookingId}. Use our AI to get a
             suggestion.
           </DialogDescription>
         </DialogHeader>
