@@ -230,7 +230,7 @@ export default function BookingsTable({
                 <TableRow
                   key={booking.id}
                   onClick={() => handleRowClick(booking.id)}
-                  className={cn("cursor-pointer", isEvenDay ? "bg-white" : "bg-muted/50")}
+                  className={cn("cursor-pointer", isEvenDay ? "bg-card" : "bg-muted")}
                 >
                   <TableCell>
                     <div className="font-medium">{format(pickupDate, "dd/MM")}</div>
@@ -264,3 +264,4 @@ export default function BookingsTable({
     </div>
   );
 }
+
