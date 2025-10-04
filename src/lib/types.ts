@@ -30,7 +30,6 @@ export type User = {
 
 export type Booking = {
   id: string;
-  bookingId?: string; // Optional for backwards compatibility, new bookings will have it
   clientName?: string;
   createdById: string; // User ID of admin or partner
   requestedBy?: string; // Name of person requesting booking (e.g. concierge)
@@ -58,6 +57,10 @@ export type Driver = {
   email: string;
   avatarUrl: string;
   status: "online" | "offline";
+  birthday: Timestamp | Date;
+  age: number;
+  nationalId: string;
+  driversLicense: string;
   currentJobId?: string;
   performance?: {
     completedJobs: number;
@@ -100,3 +103,5 @@ export type Notification = {
   sentAt: Date;
   message: string;
 };
+
+    

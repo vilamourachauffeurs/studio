@@ -191,6 +191,23 @@
             "offline"
           ],
           "description": "The driver's current availability status."
+        },
+        "birthday": {
+            "type": "string",
+            "format": "date",
+            "description": "The driver's birthday."
+        },
+        "age": {
+            "type": "number",
+            "description": "The driver's age."
+        },
+        "nationalId": {
+            "type": "string",
+            "description": "The driver's national ID number."
+        },
+        "driversLicense": {
+            "type": "string",
+            "description": "The driver's license number."
         }
       },
       "required": [
@@ -198,7 +215,11 @@
         "name",
         "phone",
         "email",
-        "status"
+        "status",
+        "birthday",
+        "age",
+        "nationalId",
+        "driversLicense"
       ]
     },
     "Client": {
@@ -317,3 +338,5 @@
     }
   }
 }
+
+    
