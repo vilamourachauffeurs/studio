@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 
@@ -101,9 +103,10 @@ export function MobileSheet() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col w-64 p-0">
-                <div className="flex h-16 items-center border-b px-6">
+                <SheetHeader className="flex h-16 items-center border-b px-6">
                   <Logo />
-                </div>
+                  <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                </SheetHeader>
                 <div className="flex-1 overflow-auto py-2">
                     <SidebarNav />
                 </div>
