@@ -5,15 +5,15 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import BookingsTable from "@/components/dashboard/bookings-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy } from "firebase/firestore";
 import type { Booking, BookingStatus } from "@/lib/types";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ListFilter } from "lucide-react";
 
-const ALL_STATUSES: (BookingStatus | 'all')[] = [
-    'all',
+const ALL_STATUSES: BookingStatus[] = [
     "draft",
     "pending_admin",
     "approved",
@@ -24,9 +24,17 @@ const ALL_STATUSES: (BookingStatus | 'all')[] = [
     "cancelled",
 ];
 
+const DEFAULT_FILTER: BookingStatus[] = [
+    "pending_admin",
+    "approved",
+    "assigned",
+    "confirmed",
+    "in_progress"
+];
+
 export default function BookingsPage() {
   const firestore = useFirestore();
-  const [statusFilter, setStatusFilter] = useState<BookingStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<BookingStatus[]>(DEFAULT_FILTER);
 
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
   const bookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, orderBy('pickupTime', 'desc')), [bookingsCollectionRef]);
@@ -34,9 +42,17 @@ export default function BookingsPage() {
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
-    if (statusFilter === 'all') return bookings;
-    return bookings.filter(booking => booking.status === statusFilter);
+    if (statusFilter.length === 0) return bookings;
+    return bookings.filter(booking => statusFilter.includes(booking.status));
   }, [bookings, statusFilter]);
+
+  const toggleStatusFilter = (status: BookingStatus) => {
+    setStatusFilter(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -48,18 +64,30 @@ export default function BookingsPage() {
             </p>
         </div>
         <div className="flex items-center gap-2">
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as BookingStatus | 'all')}>
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                    {ALL_STATUSES.map(status => (
-                        <SelectItem key={status} value={status} className="capitalize">
-                            {status.replace(/_/g, ' ')}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-10 gap-1">
+                  <ListFilter className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Filter Status
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ALL_STATUSES.map(status => (
+                  <DropdownMenuCheckboxItem
+                    key={status}
+                    checked={statusFilter.includes(status)}
+                    onCheckedChange={() => toggleStatusFilter(status)}
+                    className="capitalize"
+                  >
+                    {status.replace(/_/g, ' ')}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button asChild>
                 <Link href="/dashboard/bookings/new">Create New Booking</Link>
             </Button>

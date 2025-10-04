@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import {
+  ArrowLeft,
   Car,
   Clock,
   Euro,
@@ -139,26 +140,32 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
         </AlertDialog>
 
         <div className="flex items-start justify-between">
-            <div>
-                <h1 className="text-3xl font-headline flex items-center gap-4">
-                    <span>Booking #{booking.id.substring(0, 7)}</span>
-                     <div className={cn("flex items-center rounded-full border text-base font-medium overflow-hidden", statusStyles[booking.status])}>
-                        <span className="capitalize px-3 py-1">{booking.status.replace("_", " ")}</span>
-                         <div className="h-full w-px bg-current opacity-40"></div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-none hover:bg-black/10"
-                            onClick={() => setIsChangeStatusOpen(true)}
-                        >
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Change Status</span>
-                        </Button>
-                     </div>
-                </h1>
-                <p className="text-muted-foreground">
-                    Created on {formatTimestamp(booking.createdAt)}
-                </p>
+            <div className="flex items-center gap-4">
+                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => router.back()}>
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="sr-only">Back</span>
+                </Button>
+                <div>
+                    <h1 className="text-3xl font-headline flex items-center gap-4">
+                        <span>Booking #{booking.id.substring(0, 7)}</span>
+                         <div className={cn("flex items-center rounded-full border text-base font-medium overflow-hidden", statusStyles[booking.status])}>
+                            <span className="capitalize px-3 py-1">{booking.status.replace("_", " ")}</span>
+                             <div className="h-full w-px bg-current opacity-40"></div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-none hover:bg-black/10"
+                                onClick={() => setIsChangeStatusOpen(true)}
+                            >
+                                <Pencil className="h-4 w-4" />
+                                <span className="sr-only">Change Status</span>
+                            </Button>
+                         </div>
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Created on {formatTimestamp(booking.createdAt)}
+                    </p>
+                </div>
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={() => router.push(`/dashboard/bookings/${booking.id}/edit`)}><FilePen className="mr-2" /> Edit Booking</Button>
