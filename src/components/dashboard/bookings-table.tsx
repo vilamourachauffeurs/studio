@@ -13,6 +13,7 @@ import {
   Eye,
   Users,
   Pencil,
+  Filter,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -33,6 +34,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import type { Booking, BookingStatus } from "@/lib/types";
@@ -45,6 +47,27 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
+import { Input } from "../ui/input";
+
+const ALL_STATUSES: BookingStatus[] = [
+    "draft",
+    "pending_admin",
+    "approved",
+    "assigned",
+    "confirmed",
+    "in_progress",
+    "completed",
+    "cancelled",
+];
+
+const DEFAULT_FILTER: BookingStatus[] = [
+    "pending_admin",
+    "approved",
+    "assigned",
+    "confirmed",
+    "in_progress"
+];
+
 
 const statusStyles: Record<BookingStatus, string> = {
   draft: "bg-gray-200 text-gray-800 hover:bg-gray-300",
@@ -175,7 +198,7 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
   const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
     const target = e.target as HTMLElement;
     // Prevent navigation if a button or interactive element within the row was clicked
-    if (target.closest('button, [role="button"], a')) {
+    if (target.closest('button, [role="button"], a, [role="menuitemcheckbox"], [role="menuitem"]')) {
         return;
     }
     router.push(`/dashboard/bookings/${booking.id}`);
@@ -235,26 +258,48 @@ export default function BookingsTable({
 }: {
   bookings: Booking[];
 }) {
+    const [statusFilter, setStatusFilter] = useState<BookingStatus[]>(DEFAULT_FILTER);
+    const [pickupFilter, setPickupFilter] = useState<string>("");
+    const [dropoffFilter, setDropoffFilter] = useState<string>("");
 
-  const groupedBookings = useMemo(() => {
-    if (!bookings || bookings.length === 0) return [];
-    
-    return bookings.reduce((acc, booking) => {
-      const bookingDate = toDate(booking.pickupTime);
-      const dateStr = format(bookingDate, 'yyyy-MM-dd');
-      const existingGroup = acc.find(group => group.date === dateStr);
-      if (existingGroup) {
-        existingGroup.bookings.push(booking);
-      } else {
-        acc.push({ date: dateStr, bookings: [booking] });
-      }
-      return acc;
-    }, [] as { date: string, bookings: Booking[] }[]);
-  }, [bookings]);
+    const filteredBookings = useMemo(() => {
+        if (!bookings) return [];
+        return bookings.filter(booking => {
+            const statusMatch = statusFilter.length === 0 ? true : statusFilter.includes(booking.status);
+            const pickupMatch = !pickupFilter || booking.pickupLocation.toLowerCase().includes(pickupFilter.toLowerCase());
+            const dropoffMatch = !dropoffFilter || booking.dropoffLocation.toLowerCase().includes(dropoffFilter.toLowerCase());
+            return statusMatch && pickupMatch && dropoffMatch;
+        });
+    }, [bookings, statusFilter, pickupFilter, dropoffFilter]);
 
-  if (groupedBookings.length === 0) {
-    return <div className="text-center text-muted-foreground py-8">No bookings found for the selected filters.</div>
+    const toggleStatusFilter = (status: BookingStatus) => {
+        setStatusFilter(prev =>
+            prev.includes(status)
+            ? prev.filter(s => s !== status)
+            : [...prev, status]
+        );
+    };
+
+    const groupedBookings = useMemo(() => {
+        if (!filteredBookings || filteredBookings.length === 0) return [];
+        
+        return filteredBookings.reduce((acc, booking) => {
+        const bookingDate = toDate(booking.pickupTime);
+        const dateStr = format(bookingDate, 'yyyy-MM-dd');
+        const existingGroup = acc.find(group => group.date === dateStr);
+        if (existingGroup) {
+            existingGroup.bookings.push(booking);
+        } else {
+            acc.push({ date: dateStr, bookings: [booking] });
+        }
+        return acc;
+        }, [] as { date: string, bookings: Booking[] }[]);
+    }, [filteredBookings]);
+
+  if (bookings.length === 0) {
+    return <div className="text-center text-muted-foreground py-8">No bookings created yet.</div>
   }
+
 
   return (
     <div className="w-full">
@@ -262,14 +307,83 @@ export default function BookingsTable({
         <TableHeader>
           <TableRow>
             <TableHead style={{ width: '150px' }}>Date / Time</TableHead>
-            <TableHead>Pickup</TableHead>
-            <TableHead>Drop-off</TableHead>
+            <TableHead>
+                <div className="flex items-center gap-2">
+                    Pickup
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                <Filter className="h-4 w-4"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent onClick={(e) => e.stopPropagation()} className="p-2">
+                            <Input 
+                                placeholder="Filter..."
+                                value={pickupFilter}
+                                onChange={(e) => setPickupFilter(e.target.value)}
+                                className="w-48"
+                            />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </TableHead>
+            <TableHead>
+                 <div className="flex items-center gap-2">
+                    Drop-off
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                <Filter className="h-4 w-4"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent onClick={(e) => e.stopPropagation()} className="p-2">
+                            <Input 
+                                placeholder="Filter..."
+                                value={dropoffFilter}
+                                onChange={(e) => setDropoffFilter(e.target.value)}
+                                className="w-48"
+                            />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </TableHead>
             <TableHead style={{ width: '100px' }}>PAX</TableHead>
-            <TableHead style={{ width: '180px' }}>Status</TableHead>
+            <TableHead style={{ width: '180px' }}>
+                 <div className="flex items-center gap-2">
+                    Status
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                <Filter className="h-4 w-4"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                            {ALL_STATUSES.map(status => (
+                            <DropdownMenuCheckboxItem
+                                key={status}
+                                checked={statusFilter.includes(status)}
+                                onCheckedChange={() => toggleStatusFilter(status)}
+                                onSelect={(e) => e.preventDefault()}
+                                className="capitalize"
+                            >
+                                {status.replace(/_/g, ' ')}
+                            </DropdownMenuCheckboxItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                 </div>
+            </TableHead>
             <TableHead style={{ width: '150px' }}>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
+            {groupedBookings.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground h-32">
+                        No bookings found for the selected filters.
+                    </TableCell>
+                </TableRow>
+            )}
           {groupedBookings.map((group, groupIndex) => (
             group.bookings.map((booking) => (
                <BookingTableRow key={booking.id} booking={booking} isEvenDay={groupIndex % 2 === 0} />
