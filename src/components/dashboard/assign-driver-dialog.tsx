@@ -17,14 +17,17 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2, Rocket } from "lucide-react";
-import type { Booking, Driver } from "@/lib/types";
-import { drivers } from "@/lib/data";
+import type { Booking, Driver, Partner } from "@/lib/types";
 import { getDriverSuggestion } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc, updateDoc } from "firebase/firestore";
 
 type AssignDriverDialogProps = {
   booking: Booking;
@@ -37,13 +40,21 @@ export function AssignDriverDialog({
   open,
   onOpenChange,
 }: AssignDriverDialogProps) {
-  const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [suggestion, setSuggestion] = useState<{
     driverId: string;
     reason: string;
   } | null>(null);
   const { toast } = useToast();
+  const firestore = useFirestore();
+
+  const driversCollectionRef = useMemoFirebase(() => collection(firestore, 'drivers'), [firestore]);
+  const { data: drivers, isLoading: driversLoading } = useCollection<Driver>(driversCollectionRef);
+
+  const partnersCollectionRef = useMemoFirebase(() => collection(firestore, 'partners'), [firestore]);
+  const { data: partners, isLoading: partnersLoading } = useCollection<Partner>(partnersCollectionRef);
+
 
   const handleSuggestion = async () => {
     setIsLoading(true);
@@ -58,7 +69,7 @@ export function AssignDriverDialog({
 
     if (result.success) {
       setSuggestion(result.data);
-      setSelectedDriver(result.data.driverId);
+      setSelectedEntity(`driver_${result.data.driverId}`);
     } else {
       toast({
         title: "Error",
@@ -68,49 +79,91 @@ export function AssignDriverDialog({
     }
   };
 
-  const handleAssign = () => {
-    if (!selectedDriver) {
+  const handleAssign = async () => {
+    if (!selectedEntity) {
         toast({
-            title: "No driver selected",
-            description: "Please select a driver to assign.",
+            title: "No selection made",
+            description: "Please select a driver or partner to assign.",
             variant: "destructive",
         });
         return;
     }
-    // Here you would typically call an action to update the booking
-    toast({
-        title: "Driver Assigned!",
-        description: `${drivers.find(d => d.id === selectedDriver)?.name} has been assigned to booking #${booking.id.substring(0,7)}.`
-    });
-    onOpenChange(false);
+    
+    const [type, id] = selectedEntity.split('_');
+    const bookingRef = doc(firestore, 'bookings', booking.id);
+    let entityName = "Unknown";
+
+    try {
+        if (type === 'driver') {
+            const driver = drivers?.find(d => d.id === id);
+            entityName = driver?.name || 'Driver';
+            await updateDoc(bookingRef, { driverId: id, status: 'assigned' });
+        } else if (type === 'partner') {
+            const partner = partners?.find(p => p.id === id);
+            entityName = partner?.name || 'Partner';
+            await updateDoc(bookingRef, { partnerId: id, status: 'assigned' });
+        }
+        
+        toast({
+            title: `${type === 'driver' ? 'Driver' : 'Partner'} Assigned!`,
+            description: `${entityName} has been assigned to booking #${booking.id.substring(0,7)}.`
+        });
+        onOpenChange(false);
+    } catch (error) {
+        console.error("Error assigning entity:", error);
+        toast({
+            title: "Error",
+            description: "There was a problem assigning the entity.",
+            variant: "destructive"
+        })
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-headline">Assign Driver</DialogTitle>
+          <DialogTitle className="font-headline">Assign to Booking</DialogTitle>
           <DialogDescription>
-            Assign a driver to booking #{booking.id.substring(0,7)}. Use our AI to get a
-            suggestion.
+            Assign a driver or partner to booking #{booking.id.substring(0,7)}. Use our AI to get a
+            driver suggestion.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="driver">Select Driver</Label>
+            <Label htmlFor="entity">Select Driver or Partner</Label>
             <Select
-              onValueChange={setSelectedDriver}
-              value={selectedDriver || undefined}
+              onValueChange={setSelectedEntity}
+              value={selectedEntity || undefined}
             >
-              <SelectTrigger id="driver">
-                <SelectValue placeholder="Select a driver" />
+              <SelectTrigger id="entity">
+                <SelectValue placeholder="Select a driver or partner" />
               </SelectTrigger>
               <SelectContent>
-                {drivers.map((driver) => (
-                  <SelectItem key={driver.id} value={driver.id}>
-                    {driver.name} - ({driver.status})
-                  </SelectItem>
-                ))}
+                {driversLoading || partnersLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                ) : (
+                    <>
+                        <SelectGroup>
+                            <SelectLabel>Drivers</SelectLabel>
+                            {drivers?.map((driver) => (
+                            <SelectItem key={driver.id} value={`driver_${driver.id}`}>
+                                {driver.name} - ({driver.status})
+                            </SelectItem>
+                            ))}
+                        </SelectGroup>
+                        <SelectGroup>
+                            <SelectLabel>Partners</SelectLabel>
+                            {partners?.map((partner) => (
+                            <SelectItem key={partner.id} value={`partner_${partner.id}`}>
+                                {partner.name}
+                            </SelectItem>
+                            ))}
+                        </SelectGroup>
+                    </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -136,11 +189,13 @@ export function AssignDriverDialog({
             ) : (
               <Rocket className="mr-2 h-4 w-4" />
             )}
-            Suggest with AI
+            Suggest Driver
           </Button>
-          <Button onClick={handleAssign}>Assign Driver</Button>
+          <Button onClick={handleAssign}>Assign</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
