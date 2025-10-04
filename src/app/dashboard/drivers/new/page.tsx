@@ -258,7 +258,7 @@ export default function NewDriverPage() {
                                 onSelect={field.onChange}
                                 fromYear={new Date().getFullYear() - 100}
                                 toYear={new Date().getFullYear() - 18}
-                                captionLayout="dropdown"
+                                captionLayout="dropdown-buttons"
                                 disabled={(date) =>
                                   date > new Date() || date < new Date("1900-01-01")
                                 }
@@ -295,7 +295,7 @@ export default function NewDriverPage() {
                       <FormControl>
                         <div className="relative">
                             <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="National ID Number" {...field} value={field.value ?? ""} />
+                            <Input placeholder="National ID Number" {...field} value={field.value ?? ""} className="pl-10" />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -311,7 +311,7 @@ export default function NewDriverPage() {
                       <FormControl>
                         <div className="relative">
                             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="License Number" {...field} value={field.value ?? ""} />
+                            <Input placeholder="License Number" {...field} value={field.value ?? ""} className="pl-10"/>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -330,5 +330,3 @@ export default function NewDriverPage() {
     </div>
   );
 }
-
-    
