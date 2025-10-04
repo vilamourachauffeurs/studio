@@ -50,9 +50,9 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
 
 export async function createBookingWithSequentialId(bookingData: Omit<Booking, 'id' | 'bookingId' | 'createdAt'>) {
     try {
-        const newBookingRef = doc(collection(firestore, 'bookings'));
-
         const newBookingId = await runTransaction(firestore, async (transaction) => {
+            const newBookingRef = doc(collection(firestore, 'bookings'));
+            
             const today = format(new Date(), 'yyMMdd');
             const counterRef = doc(firestore, 'counters', today);
             const counterDoc = await transaction.get(counterRef);
@@ -82,4 +82,3 @@ export async function createBookingWithSequentialId(bookingData: Omit<Booking, '
         return { success: false, error: "Failed to create booking." };
     }
 }
-
