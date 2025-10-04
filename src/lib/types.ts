@@ -90,8 +90,6 @@ export type Partner = {
   email: string;
   phone: string;
   commissionRate: number;
-  bookingsCount: number;
-  totalCommissionPaid: number;
 };
 
 export type Notification = {
@@ -104,5 +102,3 @@ export type Notification = {
   sentAt: Date;
   message: string;
 };
-
-    
