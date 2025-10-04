@@ -191,6 +191,9 @@ export default function NewDriverPage() {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
+                                captionLayout="dropdown-buttons"
+                                fromYear={new Date().getFullYear() - 100}
+                                toYear={new Date().getFullYear() - 18}
                                 disabled={(date) =>
                                   date > new Date() || date < new Date("1900-01-01")
                                 }
