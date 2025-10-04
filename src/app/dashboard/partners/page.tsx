@@ -19,8 +19,7 @@ export default function PartnersPage() {
     const { data: partners, isLoading } = useCollection<Partner>(partnersQuery);
 
     const handleRowClick = (partnerId: string) => {
-        // We will implement this in the next step
-        // router.push(`/dashboard/partners/${partnerId}`);
+        router.push(`/dashboard/partners/${partnerId}`);
     };
 
     return (

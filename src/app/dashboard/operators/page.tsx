@@ -19,8 +19,7 @@ export default function OperatorsPage() {
     const { data: operators, isLoading } = useCollection<Operator>(operatorsQuery);
 
     const handleRowClick = (operatorId: string) => {
-        // We will implement this in a future step
-        // router.push(`/dashboard/operators/${operatorId}`);
+        router.push(`/dashboard/operators/${operatorId}`);
     };
 
     return (
