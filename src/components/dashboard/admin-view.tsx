@@ -194,7 +194,7 @@ export default function AdminView() {
             </div>
           </CardHeader>
           <CardContent>
-            <BookingsTable bookings={recentBookings || []} isDashboard={true} />
+            <BookingsTable bookings={recentBookings || []} />
           </CardContent>
         </Card>
       </div>

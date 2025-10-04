@@ -278,6 +278,7 @@ export default function BookingsTable({
     const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
 
     const filterSuggestions = useMemo(() => {
+        if (!bookings) return { pickups: [], dropoffs: [], pax: [] };
         const today = startOfDay(new Date());
         const futureBookings = bookings.filter(b => toDate(b.pickupTime) >= today);
 

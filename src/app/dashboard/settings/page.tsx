@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useDoc, useFirestore, useUser } from "@/firebase";
+import { useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
-  const userDocRef = user ? doc(firestore, "users", user.uid) : null;
+  const userDocRef = useMemoFirebase(() => user ? doc(firestore, "users", user.uid) : null, [user, firestore]);
   const { data: userProfile } = useDoc(userDocRef);
 
   const isAdmin = userProfile && (userProfile as any).role === 'admin';

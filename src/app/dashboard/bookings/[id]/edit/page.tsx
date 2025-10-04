@@ -506,5 +506,3 @@ export default function EditBookingPage() {
     </div>
   );
 }
-
-    

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { collection, query, where, doc } from "firebase/firestore";
-import type { Booking } from "@/lib/types";
+import type { Booking, Driver } from "@/lib/types";
 
 export default function DriverView() {
   const { user } = useUser();
@@ -22,7 +22,7 @@ export default function DriverView() {
   const driverId = userProfile?.relatedId;
 
   const driverDocRef = useMemoFirebase(() => driverId ? doc(firestore, 'drivers', driverId) : null, [firestore, driverId]);
-  const { data: driver } = useDoc(driverDocRef);
+  const { data: driver } = useDoc<Driver>(driverDocRef);
 
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
 
@@ -83,7 +83,7 @@ export default function DriverView() {
           </div>
         </CardHeader>
         <CardContent>
-          <BookingsTable bookings={upcomingBookings || []} isDashboard={true} />
+          <BookingsTable bookings={upcomingBookings || []} />
         </CardContent>
       </Card>
     </div>

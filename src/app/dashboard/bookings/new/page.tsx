@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -264,9 +264,9 @@ export default function NewBookingPage() {
                                         {hours.map(hour => (
                                             <Button
                                                 key={hour}
-                                                variant={format(field.value, "HH") === hour ? "default" : "ghost"}
+                                                variant={field.value && format(field.value, "HH") === hour ? "default" : "ghost"}
                                                 className="w-full justify-center"
-                                                onClick={() => field.onChange(setHours(field.value, parseInt(hour)))}
+                                                onClick={() => field.onChange(setHours(field.value || new Date(), parseInt(hour)))}
                                             >
                                                 {hour}
                                             </Button>
@@ -278,9 +278,9 @@ export default function NewBookingPage() {
                                         {minutes.map(minute => (
                                             <Button
                                                 key={minute}
-                                                variant={format(field.value, "mm") === minute ? "default" : "ghost"}
+                                                variant={field.value && format(field.value, "mm") === minute ? "default" : "ghost"}
                                                 className="w-full justify-center"
-                                                onClick={() => field.onChange(setMinutes(field.value, parseInt(minute)))}
+                                                onClick={() => field.onChange(setMinutes(field.value || new Date(), parseInt(minute)))}
                                             >
                                                 {minute}
                                             </Button>
@@ -464,5 +464,3 @@ export default function NewBookingPage() {
     </div>
   );
 }
-
-    

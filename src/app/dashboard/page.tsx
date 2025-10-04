@@ -3,9 +3,9 @@
 import AdminView from "@/components/dashboard/admin-view";
 import DriverView from "@/components/dashboard/driver-view";
 import PartnerView from "@/components/dashboard/partner-view";
-import { useUser } from "@/firebase";
+import { useUser, useMemoFirebase } from "@/firebase";
 import { doc } from 'firebase/firestore';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc } from '@/firebase';
 
 export default function DashboardPage() {
   const { user } = useUser();

@@ -78,7 +78,7 @@ export default function PartnerView() {
         </div>
         </CardHeader>
         <CardContent>
-          <BookingsTable bookings={recentBookings || []} isDashboard={true} />
+          <BookingsTable bookings={recentBookings || []} />
         </CardContent>
       </Card>
     </div>

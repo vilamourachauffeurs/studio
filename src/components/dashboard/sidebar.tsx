@@ -107,7 +107,7 @@ export function MobileSheet() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col w-64 p-0">
-                <SheetHeader>
+                <SheetHeader className="h-16 items-center border-b px-6 flex flex-row">
                   <Logo />
                   <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 </SheetHeader>
