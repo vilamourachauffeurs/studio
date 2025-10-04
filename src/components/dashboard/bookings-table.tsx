@@ -12,8 +12,9 @@ import {
   Rocket,
   Eye,
   Users,
+  Pencil,
 } from "lucide-react";
-import { format, isSameDay } from "date-fns";
+import { format } from "date-fns";
 
 import {
   Table,
@@ -37,6 +38,7 @@ import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import type { Booking, BookingStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AssignDriverDialog } from "./assign-driver-dialog";
+import { ChangeStatusDialog } from "./change-status-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getNotesSummary } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -45,20 +47,19 @@ import { useRouter } from "next/navigation";
 import { Timestamp } from "firebase/firestore";
 
 const statusStyles: Record<BookingStatus, string> = {
-  draft: "bg-gray-200 text-gray-800",
-  pending_admin: "bg-yellow-200 text-yellow-800",
-  approved: "bg-blue-200 text-blue-800",
-  assigned: "bg-purple-200 text-purple-800",
-  confirmed: "bg-green-200 text-green-800",
-  in_progress: "bg-indigo-200 text-indigo-800",
-  completed: "bg-primary/20 text-primary",
-  cancelled: "bg-red-200 text-red-800",
+  draft: "bg-gray-200 text-gray-800 hover:bg-gray-300",
+  pending_admin: "bg-yellow-200 text-yellow-800 hover:bg-yellow-300",
+  approved: "bg-blue-200 text-blue-800 hover:bg-blue-300",
+  assigned: "bg-purple-200 text-purple-800 hover:bg-purple-300",
+  confirmed: "bg-green-200 text-green-800 hover:bg-green-300",
+  in_progress: "bg-indigo-200 text-indigo-800 hover:bg-indigo-300",
+  completed: "bg-primary/20 text-primary hover:bg-primary/30",
+  cancelled: "bg-red-200 text-red-800 hover:bg-red-300",
 };
 
 function BookingActions({ booking }: { booking: Booking }) {
   const { user } = useUser();
   const firestore = useFirestore();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const [summary, setSummary] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -94,11 +95,6 @@ function BookingActions({ booking }: { booking: Booking }) {
 
   return (
     <>
-      <AssignDriverDialog
-        booking={booking}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -120,11 +116,6 @@ function BookingActions({ booking }: { booking: Booking }) {
               {booking.status === "pending_admin" && (
                 <DropdownMenuItem>
                   <CheckCircle className="mr-2 h-4 w-4" /> Approve
-                </DropdownMenuItem>
-              )}
-              {booking.status === "approved" && (
-                <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
-                  <Car className="mr-2 h-4 w-4" /> Assign Driver
                 </DropdownMenuItem>
               )}
               {booking.notes && (
@@ -176,16 +167,69 @@ const toDate = (timestamp: Timestamp | Date): Date => {
     return timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
 };
 
+function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: boolean }) {
+  const router = useRouter();
+  const [isAssignDriverOpen, setIsAssignDriverOpen] = useState(false);
+  const [isChangeStatusOpen, setIsChangeStatusOpen] = useState(false);
+
+  const handleRowClick = (bookingId: string) => {
+    router.push(`/dashboard/bookings/${bookingId}`);
+  };
+
+  const pickupDate = toDate(booking.pickupTime);
+
+  return (
+    <>
+      <AssignDriverDialog booking={booking} open={isAssignDriverOpen} onOpenChange={setIsAssignDriverOpen} />
+      <ChangeStatusDialog booking={booking} open={isChangeStatusOpen} onOpenChange={setIsChangeStatusOpen} />
+      <TableRow
+        onClick={() => handleRowClick(booking.id)}
+        className={cn("cursor-pointer", isEvenDay ? "bg-card" : "bg-muted")}
+      >
+        <TableCell>
+          <div className="font-medium">{format(pickupDate, "dd/MM")}</div>
+          <div className="text-sm text-muted-foreground">{format(pickupDate, "HH:mm")}</div>
+        </TableCell>
+        <TableCell>{booking.pickupLocation}</TableCell>
+        <TableCell>{booking.dropoffLocation}</TableCell>
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span>{booking.pax}</span>
+          </div>
+        </TableCell>
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <Badge
+            onClick={() => setIsChangeStatusOpen(true)}
+            className={cn("capitalize cursor-pointer", statusStyles[booking.status])}
+            variant="outline"
+          >
+            <Pencil className="mr-2 h-3 w-3" />
+            {booking.status.replace(/_/g, " ")}
+          </Badge>
+        </TableCell>
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2">
+            {booking.status === 'approved' && (
+              <Button size="sm" variant="outline" onClick={() => setIsAssignDriverOpen(true)}>
+                <Car className="mr-2 h-4 w-4" />
+                Assign
+              </Button>
+            )}
+            <BookingActions booking={booking} />
+          </div>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+}
+
+
 export default function BookingsTable({
   bookings,
 }: {
   bookings: Booking[];
 }) {
-  const router = useRouter();
-
-  const handleRowClick = (bookingId: string) => {
-    router.push(`/dashboard/bookings/${bookingId}`);
-  };
 
   const groupedBookings = useMemo(() => {
     if (!bookings || bookings.length === 0) return [];
@@ -216,48 +260,15 @@ export default function BookingsTable({
             <TableHead>Pickup</TableHead>
             <TableHead>Drop-off</TableHead>
             <TableHead style={{ width: '100px' }}>PAX</TableHead>
-            <TableHead style={{ width: '150px' }}>Status</TableHead>
-            <TableHead style={{ width: '80px' }}><span className="sr-only">Actions</span></TableHead>
+            <TableHead style={{ width: '180px' }}>Status</TableHead>
+            <TableHead style={{ width: '150px' }}>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {groupedBookings.map((group, groupIndex) => (
-            group.bookings.map((booking) => {
-              const isEvenDay = groupIndex % 2 === 0;
-              const pickupDate = toDate(booking.pickupTime);
-
-              return (
-                <TableRow
-                  key={booking.id}
-                  onClick={() => handleRowClick(booking.id)}
-                  className={cn("cursor-pointer", isEvenDay ? "bg-card" : "bg-muted")}
-                >
-                  <TableCell>
-                    <div className="font-medium">{format(pickupDate, "dd/MM")}</div>
-                    <div className="text-sm text-muted-foreground">{format(pickupDate, "HH:mm")}</div>
-                  </TableCell>
-                  <TableCell>{booking.pickupLocation}</TableCell>
-                  <TableCell>{booking.dropoffLocation}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{booking.pax}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={cn("capitalize", statusStyles[booking.status])}
-                      variant="outline"
-                    >
-                      {booking.status.replace(/_/g, " ")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <BookingActions booking={booking} />
-                  </TableCell>
-                </TableRow>
-              );
-            })
+            group.bookings.map((booking) => (
+               <BookingTableRow key={booking.id} booking={booking} isEvenDay={groupIndex % 2 === 0} />
+            ))
           ))}
         </TableBody>
       </Table>
