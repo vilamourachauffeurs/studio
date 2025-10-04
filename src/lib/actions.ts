@@ -10,7 +10,7 @@ import {
   type SuggestDriverForBookingInput,
 } from "@/ai/flows/suggest-driver-for-booking";
 import { BookingStatus, Booking } from "./types";
-import { doc, updateDoc, runTransaction, serverTimestamp, collection } from "firebase/firestore";
+import { doc, updateDoc, runTransaction, serverTimestamp, collection, DocumentReference, Firestore } from "firebase/firestore";
 import { firestore } from "@/firebase/server";
 import { format } from "date-fns";
 
@@ -50,6 +50,8 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
 
 export async function createBookingWithSequentialId(bookingData: Omit<Booking, 'id' | 'bookingId' | 'createdAt'>) {
     try {
+        const newBookingRef = doc(collection(firestore, 'bookings'));
+
         const newBookingId = await runTransaction(firestore, async (transaction) => {
             const today = format(new Date(), 'yyMMdd');
             const counterRef = doc(firestore, 'counters', today);
@@ -63,9 +65,6 @@ export async function createBookingWithSequentialId(bookingData: Omit<Booking, '
             const bookingId = `${today}${(newNumber).toString().padStart(3, '0')}`;
             
             transaction.set(counterRef, { lastNumber: newNumber });
-
-            // Generate the document reference on the server side
-            const newBookingRef = doc(collection(firestore, 'bookings'));
             
             transaction.set(newBookingRef, {
                 ...bookingData,
@@ -83,3 +82,4 @@ export async function createBookingWithSequentialId(bookingData: Omit<Booking, '
         return { success: false, error: "Failed to create booking." };
     }
 }
+
