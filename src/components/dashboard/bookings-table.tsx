@@ -172,8 +172,13 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
   const [isAssignDriverOpen, setIsAssignDriverOpen] = useState(false);
   const [isChangeStatusOpen, setIsChangeStatusOpen] = useState(false);
 
-  const handleRowClick = (bookingId: string) => {
-    router.push(`/dashboard/bookings/${bookingId}`);
+  const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    const target = e.target as HTMLElement;
+    // Prevent navigation if a button or interactive element within the row was clicked
+    if (target.closest('button, [role="button"], a')) {
+        return;
+    }
+    router.push(`/dashboard/bookings/${booking.id}`);
   };
 
   const pickupDate = toDate(booking.pickupTime);
@@ -183,7 +188,7 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
       <AssignDriverDialog booking={booking} open={isAssignDriverOpen} onOpenChange={setIsAssignDriverOpen} />
       <ChangeStatusDialog booking={booking} open={isChangeStatusOpen} onOpenChange={setIsChangeStatusOpen} />
       <TableRow
-        onClick={() => handleRowClick(booking.id)}
+        onClick={handleRowClick}
         className={cn("cursor-pointer", isEvenDay ? "bg-card" : "bg-muted")}
       >
         <TableCell>
@@ -248,7 +253,7 @@ export default function BookingsTable({
   }, [bookings]);
 
   if (groupedBookings.length === 0) {
-    return <div className="text-center text-muted-foreground py-8">No bookings found for the selected status.</div>
+    return <div className="text-center text-muted-foreground py-8">No bookings found for the selected filters.</div>
   }
 
   return (

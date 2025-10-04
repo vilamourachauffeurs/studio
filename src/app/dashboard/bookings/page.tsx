@@ -5,24 +5,14 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import BookingsTable from "@/components/dashboard/bookings-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy } from "firebase/firestore";
 import type { Booking, BookingStatus } from "@/lib/types";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListFilter } from "lucide-react";
-
-const ALL_STATUSES: BookingStatus[] = [
-    "draft",
-    "pending_admin",
-    "approved",
-    "assigned",
-    "confirmed",
-    "in_progress",
-    "completed",
-    "cancelled",
-];
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { BookingsFilter } from "@/components/dashboard/bookings-filter";
 
 const DEFAULT_FILTER: BookingStatus[] = [
     "pending_admin",
@@ -35,6 +25,8 @@ const DEFAULT_FILTER: BookingStatus[] = [
 export default function BookingsPage() {
   const firestore = useFirestore();
   const [statusFilter, setStatusFilter] = useState<BookingStatus[]>(DEFAULT_FILTER);
+  const [pickupFilter, setPickupFilter] = useState<string>("");
+  const [dropoffFilter, setDropoffFilter] = useState<string>("");
 
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
   const bookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, orderBy('pickupTime', 'desc')), [bookingsCollectionRef]);
@@ -42,17 +34,15 @@ export default function BookingsPage() {
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
-    if (statusFilter.length === 0) return bookings;
-    return bookings.filter(booking => statusFilter.includes(booking.status));
-  }, [bookings, statusFilter]);
+    return bookings.filter(booking => {
+        const statusMatch = statusFilter.length === 0 ? true : statusFilter.includes(booking.status);
+        const pickupMatch = !pickupFilter || booking.pickupLocation.toLowerCase().includes(pickupFilter.toLowerCase());
+        const dropoffMatch = !dropoffFilter || booking.dropoffLocation.toLowerCase().includes(dropoffFilter.toLowerCase());
+        return statusMatch && pickupMatch && dropoffMatch;
+    });
+  }, [bookings, statusFilter, pickupFilter, dropoffFilter]);
 
-  const toggleStatusFilter = (status: BookingStatus) => {
-    setStatusFilter(prev => 
-      prev.includes(status) 
-        ? prev.filter(s => s !== status)
-        : [...prev, status]
-    );
-  };
+  const activeFilterCount = (statusFilter.length > 0 ? 1 : 0) + (pickupFilter ? 1 : 0) + (dropoffFilter ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -64,31 +54,37 @@ export default function BookingsPage() {
             </p>
         </div>
         <div className="flex items-center gap-2">
-             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10 gap-1">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="h-10 gap-1 relative">
                   <ListFilter className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Filter Status
+                    Filter
                   </span>
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                      {activeFilterCount}
+                    </span>
+                  )}
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {ALL_STATUSES.map(status => (
-                  <DropdownMenuCheckboxItem
-                    key={status}
-                    checked={statusFilter.includes(status)}
-                    onCheckedChange={() => toggleStatusFilter(status)}
-                    onSelect={(e) => e.preventDefault()}
-                    className="capitalize"
-                  >
-                    {status.replace(/_/g, ' ')}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Filter Bookings</SheetTitle>
+                  <SheetDescription>
+                    Refine the list of bookings based on different criteria.
+                  </SheetDescription>
+                </SheetHeader>
+                <BookingsFilter
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    pickupFilter={pickupFilter}
+                    setPickupFilter={setPickupFilter}
+                    dropoffFilter={dropoffFilter}
+                    setDropoffFilter={setDropoffFilter}
+                />
+              </SheetContent>
+            </Sheet>
             <Button asChild>
                 <Link href="/dashboard/bookings/new">Create New Booking</Link>
             </Button>
