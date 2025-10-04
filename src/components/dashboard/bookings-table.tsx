@@ -204,7 +204,7 @@ export default function BookingsTable({
   }, [bookings]);
 
   if (groupedBookings.length === 0) {
-    return <div className="text-center text-muted-foreground py-8">No bookings found.</div>
+    return <div className="text-center text-muted-foreground py-8">No bookings found for the selected status.</div>
   }
 
   return (
@@ -264,4 +264,3 @@ export default function BookingsTable({
     </div>
   );
 }
-
