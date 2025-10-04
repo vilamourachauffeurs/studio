@@ -92,6 +92,15 @@ export type Partner = {
   commissionRate: number;
 };
 
+export type Operator = {
+  id: string;
+  name: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  commissionRate: number;
+};
+
 export type Notification = {
   id: string;
   type: "booking_request" | "job_assigned" | "status_update";
@@ -102,3 +111,5 @@ export type Notification = {
   sentAt: Date;
   message: string;
 };
+
+    

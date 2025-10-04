@@ -299,6 +299,44 @@
         "email",
         "phone"
       ]
+    },
+    "Operator": {
+      "title": "Operator",
+      "description": "Represents an operator company.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the operator."
+        },
+        "name": {
+          "type": "string",
+          "description": "The operator company's name."
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The name of the primary contact person."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The operator's contact email address."
+        },
+        "phone": {
+          "type": "string",
+          "description": "The operator's contact phone number."
+        },
+        "commissionRate": {
+          "type": "number",
+          "description": "The commission percentage for bookings from this operator."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "phone"
+      ]
     }
   },
   "auth": {
@@ -337,6 +375,14 @@
         "$ref": "#/entities/Partner"
       },
       "description": "Collection of all partners."
+    },
+    "/operators/{operatorId}": {
+      "schema": {
+        "$ref": "#/entities/Operator"
+      },
+      "description": "Collection of all operators."
     }
   }
 }
+
+    

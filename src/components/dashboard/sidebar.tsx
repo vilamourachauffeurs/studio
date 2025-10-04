@@ -28,6 +28,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/bookings", label: "Bookings", icon: Book, roles: ["admin", "partner", "driver"] },
   { href: "/dashboard/drivers", label: "Drivers", icon: Car, roles: ["admin"] },
   { href: "/dashboard/partners", label: "Partners", icon: Briefcase, roles: ["admin"] },
+  { href: "/dashboard/operators", label: "Operators", icon: Briefcase, roles: ["admin"] },
   { href: "/dashboard/clients", label: "Clients", icon: Users, roles: ["admin"] },
   { href: "/dashboard/reports", label: "Reports", icon: FileText, roles: ["admin"] },
 ];
@@ -116,3 +117,5 @@ export default function DashboardSidebar() {
         <DesktopSidebar />
     );
 }
+
+    
