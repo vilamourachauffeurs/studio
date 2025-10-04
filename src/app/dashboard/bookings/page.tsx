@@ -81,6 +81,7 @@ export default function BookingsPage() {
                     key={status}
                     checked={statusFilter.includes(status)}
                     onCheckedChange={() => toggleStatusFilter(status)}
+                    onSelect={(e) => e.preventDefault()}
                     className="capitalize"
                   >
                     {status.replace(/_/g, ' ')}
