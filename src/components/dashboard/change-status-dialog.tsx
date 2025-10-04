@@ -80,7 +80,7 @@ export function ChangeStatusDialog({
         <DialogHeader>
           <DialogTitle className="font-headline">Change Booking Status</DialogTitle>
           <DialogDescription>
-            Update the status for booking #{booking.bookingId}.
+            Update the status for booking #{booking.id.substring(0,7)}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

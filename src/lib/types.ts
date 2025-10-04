@@ -30,7 +30,7 @@ export type User = {
 
 export type Booking = {
   id: string;
-  bookingId: string;
+  bookingId?: string; // Optional for backwards compatibility, new bookings will have it
   clientName?: string;
   createdById: string; // User ID of admin or partner
   requestedBy?: string; // Name of person requesting booking (e.g. concierge)
@@ -49,12 +49,6 @@ export type Booking = {
   cost: number;
   paymentType: PaymentType;
   bookingType: BookingType;
-  // The following fields are likely calculated or for internal accounting
-  // and may not need to be on the primary booking object.
-  // We can add them later if needed.
-  // price: number;
-  // commissionPartner: number;
-  // commissionDriver: number;
 };
 
 export type Driver = {

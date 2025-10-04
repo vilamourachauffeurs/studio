@@ -52,10 +52,6 @@
           "type": "string",
           "description": "Unique identifier for the booking."
         },
-        "bookingId": {
-          "type": "string",
-          "description": "The sequential, date-based booking ID (YYMMDD###)."
-        },
         "pickupTime": {
           "type": "string",
           "format": "date-time",
@@ -148,7 +144,6 @@
       },
       "required": [
         "id",
-        "bookingId",
         "pickupTime",
         "pickupLocation",
         "dropoffLocation",
@@ -281,18 +276,6 @@
         "email",
         "phone"
       ]
-    },
-    "DailyCounter": {
-        "title": "Daily Counter",
-        "description": "Stores the last sequential number used for a given day's bookings.",
-        "type": "object",
-        "properties": {
-            "lastNumber": {
-                "type": "number",
-                "description": "The last number assigned for a booking on this day."
-            }
-        },
-        "required": ["lastNumber"]
     }
   },
   "auth": {
@@ -331,12 +314,6 @@
         "$ref": "#/entities/Partner"
       },
       "description": "Collection of all partners."
-    },
-    "/counters/{date}": {
-        "schema": {
-            "$ref": "#/entities/DailyCounter"
-        },
-        "description": "Stores daily counters for sequential booking IDs. The document ID is the date in YYMMDD format."
     }
   }
 }

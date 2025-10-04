@@ -80,7 +80,7 @@ export function AssignDriverDialog({
     // Here you would typically call an action to update the booking
     toast({
         title: "Driver Assigned!",
-        description: `${drivers.find(d => d.id === selectedDriver)?.name} has been assigned to booking #${booking.bookingId}.`
+        description: `${drivers.find(d => d.id === selectedDriver)?.name} has been assigned to booking #${booking.id.substring(0,7)}.`
     });
     onOpenChange(false);
   };
@@ -91,7 +91,7 @@ export function AssignDriverDialog({
         <DialogHeader>
           <DialogTitle className="font-headline">Assign Driver</DialogTitle>
           <DialogDescription>
-            Assign a driver to booking #{booking.bookingId}. Use our AI to get a
+            Assign a driver to booking #{booking.id.substring(0,7)}. Use our AI to get a
             suggestion.
           </DialogDescription>
         </DialogHeader>

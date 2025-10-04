@@ -19,7 +19,6 @@ import {
   Users,
   XCircle,
   Loader2,
-  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -110,7 +109,7 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
         const result = await updateBookingStatus(booking.id, "cancelled");
         setIsCancelling(false);
         if (result.success) {
-            toast({ title: "Booking Cancelled", description: `Booking #${booking.bookingId} has been cancelled.`});
+            toast({ title: "Booking Cancelled", description: `Booking #${booking.id.substring(0,7)} has been cancelled.`});
             setIsCancelAlertOpen(false);
             router.refresh(); // Re-fetches data on the page
         } else {
@@ -149,7 +148,7 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                 </Button>
                 <div>
                     <h1 className="text-3xl font-headline flex items-center gap-4">
-                        <span>Booking #{booking.bookingId}</span>
+                        <span>Booking #{booking.id.substring(0,7)}</span>
                          <div className={cn("flex items-center rounded-full border text-base font-medium overflow-hidden", statusStyles[booking.status])}>
                             <span className="capitalize px-3 py-1">{booking.status.replace("_", " ")}</span>
                              <div className="h-full w-px bg-current opacity-40"></div>

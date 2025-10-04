@@ -4,7 +4,7 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { doc } from "firebase/firestore";
-import { useFirestore, useDoc } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import type { Booking } from "@/lib/types";
 import BookingDetails from "@/components/dashboard/booking-details";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ export default function BookingDetailsPage() {
   const firestore = useFirestore();
   const bookingId = Array.isArray(id) ? id[0] : id;
 
-  const bookingRef = useMemo(
+  const bookingRef = useMemoFirebase(
     () => (bookingId ? doc(firestore, "bookings", bookingId) : null),
     [firestore, bookingId]
   );

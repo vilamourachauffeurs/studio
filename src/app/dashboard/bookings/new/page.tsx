@@ -36,13 +36,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
-import { collection, serverTimestamp, doc } from "firebase/firestore";
+import { collection, serverTimestamp, doc, addDoc } from "firebase/firestore";
 import type { Partner } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useCollection } from "@/firebase";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { createBookingWithSequentialId } from "@/lib/actions";
 
 const bookingFormSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required."),
@@ -127,25 +126,25 @@ export default function NewBookingPage() {
     // @ts-ignore
     const isAdmin = userProfile.role === 'admin';
     const bookingStatus = isAdmin ? 'approved' : 'pending_admin';
-
-    const result = await createBookingWithSequentialId({
-        ...data,
-        status: bookingStatus,
-        createdById: user.uid,
-    });
-
-
-    if (result.success) {
-      toast({
-        title: "Booking Created!",
-        description: `Booking #${result.bookingId} has been saved with status: ${bookingStatus.replace('_', ' ')}.`,
-      });
-      router.push("/dashboard/bookings");
-    } else {
-        console.error("Error creating booking:", result.error);
+    
+    try {
+        const docRef = await addDoc(collection(firestore, "bookings"), {
+            ...data,
+            status: bookingStatus,
+            createdById: user.uid,
+            createdAt: serverTimestamp(),
+        });
+        
+        toast({
+            title: "Booking Created!",
+            description: `Booking #${docRef.id.substring(0,7)} has been saved with status: ${bookingStatus.replace('_', ' ')}.`,
+        });
+        router.push("/dashboard/bookings");
+    } catch (error: any) {
+        console.error("Error creating booking:", error);
         toast({
             title: "Error",
-            description: "There was a problem creating the booking.",
+            description: "There was a problem creating the booking." + (error?.message || ""),
             variant: "destructive"
         })
     }
