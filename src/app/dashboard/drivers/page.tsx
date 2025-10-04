@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal } from "lucide-react";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query } from "firebase/firestore";
@@ -80,7 +78,9 @@ export default function DriversPage() {
                                         <TableCell>{driver.performance?.onTimePercent || 'N/A'}%</TableCell>
                                         <TableCell>{driver.performance?.completedJobs || 0}</TableCell>
                                         <TableCell>
-                                            <Button variant="outline" size="sm">View / Edit</Button>
+                                            <Button asChild variant="outline" size="sm">
+                                                <Link href={`/dashboard/drivers/${driver.id}/edit`}>View / Edit</Link>
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -92,5 +92,3 @@ export default function DriversPage() {
         </div>
     );
 }
-
-    
