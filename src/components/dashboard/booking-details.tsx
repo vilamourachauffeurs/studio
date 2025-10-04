@@ -18,7 +18,6 @@ import {
   Users,
   XCircle,
   Loader2,
-  Truck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -196,7 +195,7 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                     <InfoRow icon={MapPin} label="Pickup" value={booking.pickupLocation} />
                     <InfoRow icon={MapPin} label="Dropoff" value={booking.dropoffLocation} />
                     <InfoRow icon={Clock} label="Pickup Time" value={formatTimestamp(booking.pickupTime)} />
-                    <InfoRow icon={Truck} label="Vehicle Type" value={booking.vehicleType} />
+                    <InfoRow icon={Car} label="Vehicle Type" value={booking.vehicleType} />
                 </CardContent>
             </Card>
              <Card className="shadow-lg">
