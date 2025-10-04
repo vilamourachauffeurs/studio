@@ -11,6 +11,7 @@ import {
   FileText,
   LayoutDashboard,
   PanelLeft,
+  Settings,
 } from "lucide-react";
 import Logo from "@/components/logo";
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/operators", label: "Operators", icon: Briefcase, roles: ["admin"] },
   { href: "/dashboard/clients", label: "Clients", icon: Users, roles: ["admin"] },
   { href: "/dashboard/reports", label: "Reports", icon: FileText, roles: ["admin"] },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ];
 
 function NavLink({
@@ -103,7 +105,7 @@ export function MobileSheet() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col w-64 p-0">
-                <SheetHeader className="flex h-16 items-center border-b px-6">
+                <SheetHeader>
                   <Logo />
                   <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 </SheetHeader>
@@ -120,5 +122,3 @@ export default function DashboardSidebar() {
         <DesktopSidebar />
     );
 }
-
-    
