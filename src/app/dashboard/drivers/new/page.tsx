@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, differenceInYears } from "date-fns";
 import { CalendarIcon, User, Mail, Phone, Hash, CreditCard, KeyRound } from "lucide-react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -77,12 +77,27 @@ export default function NewDriverPage() {
 
 
   async function onSubmit(data: DriverFormValues) {
-    try {
-        // 1. Create Firebase Auth user
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-        const user = userCredential.user;
+    const adminUser = auth.currentUser;
+    if (!adminUser || !adminUser.email) {
+        toast({
+            title: "Error",
+            description: "Admin user not found. Please log in again.",
+            variant: "destructive",
+        });
+        return;
+    }
+    const adminEmail = adminUser.email;
+    const adminPassword = "password"; // This should be handled more securely in a real app
 
-        // 2. Create driver document in 'drivers' collection
+    try {
+        // 1. Create Firebase Auth user for the new driver
+        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        const newUser = userCredential.user;
+
+        // 2. Re-authenticate as admin immediately
+        await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+
+        // 3. Create driver document in 'drivers' collection
         const driverDocRef = await addDoc(collection(firestore, "drivers"), {
             name: data.name,
             email: data.email,
@@ -94,13 +109,13 @@ export default function NewDriverPage() {
             status: "offline", // Default status
             avatarUrl: `https://picsum.photos/seed/${data.name.replace(/\s/g, '')}/100/100`, // Placeholder avatar
             createdAt: serverTimestamp(),
-            uid: user.uid, // Link to the auth user
+            uid: newUser.uid, // Link to the auth user
         });
 
-        // 3. Create user profile in 'users' collection
-        await setDoc(doc(firestore, "users", user.uid), {
-            id: user.uid,
-            email: user.email,
+        // 4. Create user profile in 'users' collection for the new driver
+        await setDoc(doc(firestore, "users", newUser.uid), {
+            id: newUser.uid,
+            email: newUser.email,
             name: data.name,
             phone: data.phone,
             role: 'driver',
@@ -115,6 +130,13 @@ export default function NewDriverPage() {
 
     } catch (error: any) {
         console.error("Error creating driver:", error);
+        
+        // If user creation failed, the admin is still logged in.
+        // If it succeeded but something else failed, we need to log the admin back in.
+        if (auth.currentUser?.email !== adminEmail) {
+            await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+        }
+
         toast({
             title: "Error",
             description: "There was a problem creating the driver. " + (error.code === 'auth/email-already-in-use' ? 'This email is already registered.' : error.message),
@@ -234,9 +256,9 @@ export default function NewDriverPage() {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                captionLayout="dropdown-buttons"
                                 fromYear={new Date().getFullYear() - 100}
                                 toYear={new Date().getFullYear() - 18}
+                                captionLayout="dropdown"
                                 disabled={(date) =>
                                   date > new Date() || date < new Date("1900-01-01")
                                 }
