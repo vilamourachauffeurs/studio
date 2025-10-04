@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   PanelLeft,
   Settings,
+  Hotel,
 } from "lucide-react";
 import Logo from "@/components/logo";
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
@@ -23,7 +24,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 
 const NAV_ITEMS = [
@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/operators", label: "Operators", icon: Briefcase, roles: ["admin"] },
   { href: "/dashboard/clients", label: "Clients", icon: Users, roles: ["admin"] },
   { href: "/dashboard/reports", label: "Reports", icon: FileText, roles: ["admin"] },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin"] },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin", "partner", "driver"] },
 ];
 
 function NavLink({
@@ -105,7 +105,7 @@ export function MobileSheet() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col w-64 p-0">
-                <SheetHeader>
+                <SheetHeader className="h-16 items-center border-b px-6 flex flex-row">
                   <Logo />
                   <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 </SheetHeader>
