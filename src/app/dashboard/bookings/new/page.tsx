@@ -41,7 +41,7 @@ import type { Partner } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useCollection } from "@/firebase";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const bookingFormSchema = z.object({
   pickupLocation: z.string().min(1, "Pickup location is required."),
@@ -176,28 +176,13 @@ export default function NewBookingPage() {
                     <FormItem className="space-y-3 md:col-span-2">
                       <FormLabel>Booking Type</FormLabel>
                       <FormControl>
-                        <RadioGroup
+                        <ToggleGroup
+                          value={field.value}
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
                         >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="inAdvance" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              In Advance
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="rightNow" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Right Now (Urgent)
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
+                          <ToggleGroupItem value="inAdvance">In Advance</ToggleGroupItem>
+                          <ToggleGroupItem value="rightNow">Right Now (Urgent)</ToggleGroupItem>
+                        </ToggleGroup>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -335,28 +320,14 @@ export default function NewBookingPage() {
                     <FormItem>
                       <FormLabel>Vehicle Type</FormLabel>
                       <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
+                        <ToggleGroup
                           value={field.value}
-                          className="flex items-center space-x-4 pt-2"
+                          onValueChange={field.onChange}
+                          className="pt-2"
                         >
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="Sedan" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Sedan
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="Minivan" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              Minivan
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
+                          <ToggleGroupItem value="Sedan">Sedan</ToggleGroupItem>
+                          <ToggleGroupItem value="Minivan">Minivan</ToggleGroupItem>
+                        </ToggleGroup>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
