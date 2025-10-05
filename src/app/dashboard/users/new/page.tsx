@@ -8,6 +8,8 @@ import * as z from "zod";
 import { Mail, Phone, User as UserIcon, KeyRound, Briefcase, Building, Car } from "lucide-react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, doc, setDoc } from "firebase/firestore";
+import { initializeApp, deleteApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,9 +30,10 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useAuth, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { firebaseConfig } from "@/firebase/config";
 import { useRouter } from "next/navigation";
-import type { UserRole, Partner, Operator, Driver } from "@/lib/types";
+import type { Partner, Operator, Driver } from "@/lib/types";
 
 const userFormSchema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -46,7 +49,6 @@ type UserFormValues = z.infer<typeof userFormSchema>;
 export default function NewUserPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const auth = useAuth();
   const router = useRouter();
   
   const form = useForm<UserFormValues>({
@@ -73,9 +75,13 @@ export default function NewUserPage() {
   const { data: drivers } = useCollection<Driver>(driversRef);
 
   async function onSubmit(data: UserFormValues) {
+    const tempAppName = `temp-user-creation-${Date.now()}`;
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
     try {
-        // Create user in Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        // Create user in Firebase Auth using the temporary instance
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
         const user = userCredential.user;
 
         // Create user document in Firestore
@@ -100,6 +106,9 @@ export default function NewUserPage() {
             description: error.message || "There was a problem creating the user.",
             variant: "destructive"
         })
+    } finally {
+        // Clean up the temporary app instance
+        await deleteApp(tempApp);
     }
   }
 
@@ -308,3 +317,5 @@ export default function NewUserPage() {
     </div>
   );
 }
+
+    
