@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format, setHours, setMinutes } from "date-fns";
-import { CalendarIcon, Euro, Users, Briefcase, MapPin, User, FileSignature, Car, Clock } from "lucide-react";
+import { CalendarIcon, Euro, Users, Briefcase, MapPin, User, FileSignature, Car, Clock, Building } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -37,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, serverTimestamp, doc, addDoc } from "firebase/firestore";
-import type { Partner } from "@/lib/types";
+import type { Partner, Operator } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useCollection } from "@/firebase";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -54,6 +56,7 @@ const bookingFormSchema = z.object({
   clientName: z.string().optional(),
   requestedBy: z.string().optional(),
   partnerId: z.string().optional(),
+  operatorId: z.string().optional(),
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
   paymentType: z.enum(["driver", "mb", "account"]),
   notes: z.string().optional(),
@@ -78,6 +81,9 @@ export default function NewBookingPage() {
   const partnersCollectionRef = useMemoFirebase(() => collection(firestore, 'partners'), [firestore]);
   const { data: partners } = useCollection<Partner>(partnersCollectionRef);
   
+  const operatorsCollectionRef = useMemoFirebase(() => collection(firestore, 'operators'), [firestore]);
+  const { data: operators } = useCollection<Operator>(operatorsCollectionRef);
+
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -88,6 +94,7 @@ export default function NewBookingPage() {
       clientName: "",
       requestedBy: "",
       partnerId: "",
+      operatorId: "",
       cost: 0,
       paymentType: "driver",
       notes: "",
@@ -147,6 +154,17 @@ export default function NewBookingPage() {
             description: "There was a problem creating the booking." + (error?.message || ""),
             variant: "destructive"
         })
+    }
+  }
+  
+  const handleEntitySelect = (value: string) => {
+    const [type, id] = value.split('_');
+    if (type === 'operator') {
+        form.setValue('operatorId', id);
+        form.setValue('partnerId', undefined);
+    } else if (type === 'partner') {
+        form.setValue('partnerId', id);
+        form.setValue('operatorId', undefined);
     }
   }
 
@@ -373,27 +391,36 @@ export default function NewBookingPage() {
                 />
                 <FormField
                     control={form.control}
-                    name="partnerId"
+                    name="partnerId" // Keep one name for the form state, logic will handle which ID is which
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Operator / Partner (Optional)</FormLabel>
                         <div className="relative">
-                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                            <Select onValueChange={handleEntitySelect} value={form.getValues().operatorId ? `operator_${form.getValues().operatorId}` : form.getValues().partnerId ? `partner_${form.getValues().partnerId}` : undefined}>
                                 <FormControl>
                                 <SelectTrigger className="pl-10">
-                                    <SelectValue placeholder="Select a partner if applicable" />
+                                    <SelectValue placeholder="Select an operator or partner" />
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                {partners?.map(partner => (
-                                    <SelectItem key={partner.id} value={partner.id}>{partner.name}</SelectItem>
-                                ))}
+                                    {operators && operators.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Operators</SelectLabel>
+                                            {operators.map(o => <SelectItem key={o.id} value={`operator_${o.id}`}>{o.name}</SelectItem>)}
+                                        </SelectGroup>
+                                    )}
+                                    {partners && partners.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Partners</SelectLabel>
+                                            {partners.map(p => <SelectItem key={p.id} value={`partner_${p.id}`}>{p.name}</SelectItem>)}
+                                        </SelectGroup>
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>
                         <FormDescription>
-                            If this booking is on behalf of a partner company.
+                            If this booking is on behalf of an operator or partner company.
                         </FormDescription>
                         <FormMessage />
                         </FormItem>
@@ -466,5 +493,3 @@ export default function NewBookingPage() {
     </div>
   );
 }
-
-    
