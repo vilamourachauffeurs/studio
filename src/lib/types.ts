@@ -14,7 +14,7 @@ export type BookingStatus =
   | "completed"
   | "cancelled";
 
-export type PaymentType = "credit_card" | "account" | "cash";
+export type PaymentType = "driver" | "mb" | "account";
 
 export type VehicleType = "Sedan" | "Minivan";
 
@@ -113,3 +113,5 @@ export type Notification = {
   sentAt: Date;
   message: string;
 };
+
+    

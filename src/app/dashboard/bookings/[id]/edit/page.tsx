@@ -56,7 +56,7 @@ const bookingFormSchema = z.object({
   requestedBy: z.string().optional(),
   partnerId: z.string().optional(),
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
-  paymentType: z.enum(["credit_card", "account", "cash"]),
+  paymentType: z.enum(["driver", "mb", "account"]),
   notes: z.string().optional(),
   bookingType: z.enum(["rightNow", "inAdvance"]),
 });
@@ -91,7 +91,7 @@ export default function EditBookingPage() {
         requestedBy: "",
         partnerId: "",
         cost: 0,
-        paymentType: "account",
+        paymentType: "driver",
         notes: "",
         pickupTime: undefined,
         bookingType: "inAdvance",
@@ -134,6 +134,7 @@ export default function EditBookingPage() {
         requestedBy: booking.requestedBy ?? "",
         notes: booking.notes ?? "",
         vehicleType: booking.vehicleType || "Sedan",
+        paymentType: booking.paymentType || "driver",
         bookingType: booking.bookingType || "inAdvance",
       })
     }
@@ -217,8 +218,10 @@ export default function EditBookingPage() {
                       <FormLabel>Booking Type</FormLabel>
                       <FormControl>
                         <ToggleGroup
+                          type="single"
                           value={field.value}
                           onValueChange={field.onChange}
+                          defaultValue="inAdvance"
                         >
                           <ToggleGroupItem value="inAdvance">In Advance</ToggleGroupItem>
                           <ToggleGroupItem value="rightNow">Right Now (Urgent)</ToggleGroupItem>
@@ -361,9 +364,11 @@ export default function EditBookingPage() {
                         <FormLabel>Vehicle Type</FormLabel>
                         <FormControl>
                             <ToggleGroup
+                                type="single"
                                 value={field.value}
                                 onValueChange={field.onChange}
                                 className="pt-2"
+                                defaultValue="Sedan"
                                 >
                                 <ToggleGroupItem value="Sedan">Sedan</ToggleGroupItem>
                                 <ToggleGroupItem value="Minivan">Minivan</ToggleGroupItem>
@@ -453,27 +458,25 @@ export default function EditBookingPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
+                 <FormField
                     control={form.control}
                     name="paymentType"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Payment Type</FormLabel>
-                         <div className="relative">
-                            <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                <SelectTrigger className="pl-10">
-                                    <SelectValue placeholder="Select payment type" />
-                                </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="credit_card">Credit Card</SelectItem>
-                                    <SelectItem value="account">Account</SelectItem>
-                                    <SelectItem value="cash">Cash</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <FormControl>
+                            <ToggleGroup
+                                type="single"
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                className="pt-2"
+                                defaultValue="driver"
+                            >
+                                <ToggleGroupItem value="driver">Driver</ToggleGroupItem>
+                                <ToggleGroupItem value="mb">MB</ToggleGroupItem>
+                                <ToggleGroupItem value="account">Account</ToggleGroupItem>
+                            </ToggleGroup>
+                        </FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -506,3 +509,5 @@ export default function EditBookingPage() {
     </div>
   );
 }
+
+    

@@ -2,67 +2,80 @@
 "use client"
 
 import * as React from "react"
+import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
+import { cva, type VariantProps } from "class-variance-authority"
+
 import { cn } from "@/lib/utils"
 
-export interface ToggleGroupContextProps {
-  value: string
-  onValueChange: (value: string) => void
-}
-
-const ToggleGroupContext = React.createContext<ToggleGroupContextProps | null>(
-  null
+const toggleVariants = cva(
+  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-transparent",
+        outline:
+          "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+      },
+      size: {
+        default: "h-10 px-3",
+        sm: "h-9 px-2.5",
+        lg: "h-11 px-5",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
 )
 
-export const useToggleGroup = () => {
-  const context = React.useContext(ToggleGroupContext)
-  if (!context) {
-    throw new Error("useToggleGroup must be used within a ToggleGroup")
-  }
-  return context
-}
+const ToggleGroupContext = React.createContext<
+  VariantProps<typeof toggleVariants>
+>(null!)
 
-export const ToggleGroup = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & ToggleGroupContextProps
->(({ className, value, onValueChange, children, ...props }, ref) => {
-  return (
-    <ToggleGroupContext.Provider value={{ value, onValueChange }}>
-      <div
-        ref={ref}
-        className={cn("flex items-center gap-1", className)}
-        {...props}
-      >
-        {children}
-      </div>
+const ToggleGroup = React.forwardRef<
+  React.ElementRef<typeof ToggleGroupPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
+    VariantProps<typeof toggleVariants>
+>(({ className, variant, size, children, ...props }, ref) => (
+  <ToggleGroupPrimitive.Root
+    ref={ref}
+    className={cn("flex items-center justify-center gap-1", className)}
+    {...props}
+  >
+    <ToggleGroupContext.Provider value={{ variant, size }}>
+      {children}
     </ToggleGroupContext.Provider>
-  )
-})
+  </ToggleGroupPrimitive.Root>
+))
+ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName
 
-ToggleGroup.displayName = "ToggleGroup"
+const ToggleGroupItem = React.forwardRef<
+  React.ElementRef<typeof ToggleGroupPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> &
+    VariantProps<typeof toggleVariants>
+>(({ className, children, variant, size, ...props }, ref) => {
+  const context = React.useContext(ToggleGroupContext)
 
-export const ToggleGroupItem = React.forwardRef<
-  HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement> & { value: string }
->(({ className, value, children, ...props }, ref) => {
-  const { value: contextValue, onValueChange } = useToggleGroup()
-  const isActive = contextValue === value
   return (
-    <button
+    <ToggleGroupPrimitive.Item
       ref={ref}
-      type="button"
       className={cn(
-        "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2",
-        isActive
-          ? "bg-primary text-primary-foreground hover:bg-primary/90"
-          : "bg-transparent border border-input hover:bg-accent hover:text-accent-foreground",
+        toggleVariants({
+          variant: context.variant || variant,
+          size: context.size || size,
+        }),
+        "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
         className
       )}
-      onClick={() => onValueChange(value)}
       {...props}
     >
       {children}
-    </button>
+    </ToggleGroupPrimitive.Item>
   )
 })
+ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName
 
-ToggleGroupItem.displayName = "ToggleGroupItem"
+export { ToggleGroup, ToggleGroupItem }
+
+    

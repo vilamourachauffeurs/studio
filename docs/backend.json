@@ -122,9 +122,9 @@
           "type": "string",
           "description": "The method of payment.",
           "enum": [
-            "credit_card",
-            "account",
-            "cash"
+            "driver",
+            "mb",
+            "account"
           ]
         },
         "createdAt": {
@@ -383,3 +383,6 @@
     }
   }
 }
+
+
+    
