@@ -36,8 +36,9 @@ export default function BookingsPage() {
         return query(bookingsCollectionRef, where('driverId', '==', userProfile.relatedId), orderBy('pickupTime', 'desc'));
     }
 
-    return null;
-  }, [bookingsCollectionRef, userProfile]);
+    // For users with roles that don't have a specific view or if relatedId is missing
+    return query(bookingsCollectionRef, where('createdById', '==', user.uid), orderBy('pickupTime', 'desc'));
+  }, [bookingsCollectionRef, userProfile, user]);
 
   const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
 

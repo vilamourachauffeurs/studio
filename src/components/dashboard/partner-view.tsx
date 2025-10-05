@@ -19,26 +19,34 @@ export default function PartnerView() {
   const { data: userProfile } = useDoc(userDocRef);
 
   // @ts-ignore
-  const partnerId = userProfile?.relatedId;
+  const relatedId = userProfile?.relatedId;
 
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
 
   const partnerBookingsQuery = useMemoFirebase(() => {
-    if (!partnerId) return null;
-    return query(bookingsCollectionRef, where('partnerId', '==', partnerId));
-  }, [bookingsCollectionRef, partnerId]);
+    if (!relatedId) return null;
+    // @ts-ignore
+    if (userProfile?.role === 'partner' || userProfile?.role === 'operator') {
+      return query(bookingsCollectionRef, where('partnerId', '==', relatedId));
+    }
+    return null;
+  }, [bookingsCollectionRef, relatedId, userProfile]);
 
   const { data: partnerBookings } = useCollection<Booking>(partnerBookingsQuery);
 
   const recentBookingsQuery = useMemoFirebase(() => {
-    if (!partnerId) return null;
-    return query(
-      bookingsCollectionRef,
-      where('partnerId', '==', partnerId),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    );
-  }, [bookingsCollectionRef, partnerId]);
+    if (!relatedId) return null;
+    // @ts-ignore
+    if (userProfile?.role === 'partner' || userProfile?.role === 'operator') {
+        return query(
+          bookingsCollectionRef,
+          where('partnerId', '==', relatedId),
+          orderBy('createdAt', 'desc'),
+          limit(5)
+        );
+    }
+    return null;
+  }, [bookingsCollectionRef, relatedId, userProfile]);
 
   const { data: recentBookings } = useCollection<Booking>(recentBookingsQuery);
 
@@ -48,7 +56,7 @@ export default function PartnerView() {
     <div className="space-y-6">
         <div className="flex justify-between items-start">
             <div>
-                <h2 className="text-3xl font-headline">Welcome, Partner!</h2>
+                <h2 className="text-3xl font-headline">Welcome!</h2>
                 <p className="text-muted-foreground">Here's what's happening with your bookings.</p>
             </div>
             <Button asChild>

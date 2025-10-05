@@ -108,7 +108,7 @@ export function AssignDriverDialog({
         } else if (type === 'operator') {
             const operator = operators?.find(o => o.id === id);
             entityName = operator?.name || 'Operator';
-            // Assuming operators are treated like partners for assignment
+            // Treat operators like partners for assignment, using the partnerId field
             await updateDoc(bookingRef, { partnerId: id, driverId: null, status: 'assigned' });
         }
         
