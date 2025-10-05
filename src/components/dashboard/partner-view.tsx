@@ -20,24 +20,29 @@ export default function PartnerView() {
 
   // @ts-ignore
   const relatedId = userProfile?.relatedId;
+  // @ts-ignore
+  const userRole = userProfile?.role;
 
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
 
   const partnerBookingsQuery = useMemoFirebase(() => {
-    if (!relatedId) return null;
-    // @ts-ignore
-    if (userProfile?.role === 'partner' || userProfile?.role === 'operator') {
+    if (!relatedId || !userRole) return null;
+
+    if (userRole === 'partner') {
       return query(bookingsCollectionRef, where('partnerId', '==', relatedId));
     }
+    if (userRole === 'operator') {
+      return query(bookingsCollectionRef, where('operatorId', '==', relatedId));
+    }
     return null;
-  }, [bookingsCollectionRef, relatedId, userProfile]);
+  }, [bookingsCollectionRef, relatedId, userRole]);
 
   const { data: partnerBookings } = useCollection<Booking>(partnerBookingsQuery);
 
   const recentBookingsQuery = useMemoFirebase(() => {
-    if (!relatedId) return null;
-    // @ts-ignore
-    if (userProfile?.role === 'partner' || userProfile?.role === 'operator') {
+    if (!relatedId || !userRole) return null;
+    
+    if (userRole === 'partner') {
         return query(
           bookingsCollectionRef,
           where('partnerId', '==', relatedId),
@@ -45,8 +50,16 @@ export default function PartnerView() {
           limit(5)
         );
     }
+    if (userRole === 'operator') {
+        return query(
+            bookingsCollectionRef,
+            where('operatorId', '==', relatedId),
+            orderBy('createdAt', 'desc'),
+            limit(5)
+        );
+    }
     return null;
-  }, [bookingsCollectionRef, relatedId, userProfile]);
+  }, [bookingsCollectionRef, relatedId, userRole]);
 
   const { data: recentBookings } = useCollection<Booking>(recentBookingsQuery);
 
@@ -98,3 +111,5 @@ export default function PartnerView() {
     </div>
   );
 }
+
+    

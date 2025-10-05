@@ -90,7 +90,11 @@
         },
         "partnerId": {
           "type": "string",
-          "description": "The ID of the partner (operator) if applicable."
+          "description": "The ID of the partner company fulfilling the ride."
+        },
+        "operatorId": {
+          "type": "string",
+          "description": "The ID of the operator company (e.g. hotel) that requested the ride."
         },
         "driverId": {
           "type": "string",
@@ -383,6 +387,5 @@
     }
   }
 }
-
 
     

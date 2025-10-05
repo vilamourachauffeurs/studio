@@ -86,7 +86,7 @@ export function AssignDriverDialog({
     if (!selectedEntity) {
         toast({
             title: "No selection made",
-            description: "Please select a driver or partner to assign.",
+            description: "Please select a driver, operator, or partner to assign.",
             variant: "destructive",
         });
         return;
@@ -95,22 +95,30 @@ export function AssignDriverDialog({
     const [type, id] = selectedEntity.split('_');
     const bookingRef = doc(firestore, 'bookings', booking.id);
     let entityName = "Unknown";
+    let updateData: any = { status: 'assigned' };
 
     try {
         if (type === 'driver') {
             const driver = drivers?.find(d => d.id === id);
             entityName = driver?.name || 'Driver';
-            await updateDoc(bookingRef, { driverId: id, partnerId: null, status: 'assigned' });
+            updateData.driverId = id;
+            updateData.partnerId = null;
+            updateData.operatorId = null;
         } else if (type === 'partner') {
             const partner = partners?.find(p => p.id === id);
             entityName = partner?.name || 'Partner';
-            await updateDoc(bookingRef, { partnerId: id, driverId: null, status: 'assigned' });
+            updateData.partnerId = id;
+            updateData.driverId = null;
+            updateData.operatorId = null;
         } else if (type === 'operator') {
             const operator = operators?.find(o => o.id === id);
             entityName = operator?.name || 'Operator';
-            // Treat operators like partners for assignment, using the partnerId field
-            await updateDoc(bookingRef, { partnerId: id, driverId: null, status: 'assigned' });
+            updateData.operatorId = id;
+            updateData.driverId = null;
+            updateData.partnerId = null;
         }
+
+        await updateDoc(bookingRef, updateData);
         
         toast({
             title: `${type.charAt(0).toUpperCase() + type.slice(1)} Assigned!`,
@@ -139,13 +147,13 @@ export function AssignDriverDialog({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="entity">Select Driver or Partner</Label>
+            <Label htmlFor="entity">Select Driver, Operator, or Partner</Label>
             <Select
               onValueChange={setSelectedEntity}
               value={selectedEntity || undefined}
             >
               <SelectTrigger id="entity">
-                <SelectValue placeholder="Select a driver, operator, or partner" />
+                <SelectValue placeholder="Select an entity to assign" />
               </SelectTrigger>
               <SelectContent>
                 {driversLoading || partnersLoading || operatorsLoading ? (
@@ -213,3 +221,5 @@ export function AssignDriverDialog({
     </Dialog>
   );
 }
+
+    

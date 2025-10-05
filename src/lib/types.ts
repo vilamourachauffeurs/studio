@@ -35,7 +35,8 @@ export type Booking = {
   clientName?: string;
   createdById: string; // User ID of admin or partner
   requestedBy?: string; // Name of person requesting booking (e.g. concierge)
-  partnerId?: string; // Operator
+  partnerId?: string; 
+  operatorId?: string;
   partner?: Partner;
   pickupLocation: string;
   dropoffLocation:string;

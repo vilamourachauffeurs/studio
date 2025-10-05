@@ -24,19 +24,21 @@ export default function BookingsPage() {
     if (!userProfile) return null;
 
     // @ts-ignore
-    if (userProfile.role === 'admin') {
+    const userRole = userProfile.role;
+    // @ts-ignore
+    const relatedId = userProfile.relatedId;
+
+    if (userRole === 'admin') {
       return query(bookingsCollectionRef, orderBy('pickupTime', 'desc'));
-    // @ts-ignore
-    } else if ((userProfile.role === 'partner' || userProfile.role === 'operator') && userProfile.relatedId) {
-    // @ts-ignore
-      return query(bookingsCollectionRef, where('partnerId', '==', userProfile.relatedId), orderBy('pickupTime', 'desc'));
-    // @ts-ignore
-    } else if (userProfile.role === 'driver' && userProfile.relatedId) {
-    // @ts-ignore
-        return query(bookingsCollectionRef, where('driverId', '==', userProfile.relatedId), orderBy('pickupTime', 'desc'));
+    } else if (userRole === 'partner' && relatedId) {
+      return query(bookingsCollectionRef, where('partnerId', '==', relatedId), orderBy('pickupTime', 'desc'));
+    } else if (userRole === 'operator' && relatedId) {
+      return query(bookingsCollectionRef, where('operatorId', '==', relatedId), orderBy('pickupTime', 'desc'));
+    } else if (userRole === 'driver' && relatedId) {
+      return query(bookingsCollectionRef, where('driverId', '==', relatedId), orderBy('pickupTime', 'desc'));
     }
 
-    // For users with roles that don't have a specific view or if relatedId is missing
+    // Fallback for users (like partners/operators without a relatedId) to see bookings they created
     return query(bookingsCollectionRef, where('createdById', '==', user.uid), orderBy('pickupTime', 'desc'));
   }, [bookingsCollectionRef, userProfile, user]);
 
@@ -77,3 +79,5 @@ export default function BookingsPage() {
     </div>
   );
 }
+
+    
