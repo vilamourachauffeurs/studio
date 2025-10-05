@@ -7,32 +7,38 @@ import BookingsTable from "./bookings-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, query, where, orderBy, limit, doc } from "firebase/firestore";
 import type { Booking } from "@/lib/types";
 
 export default function PartnerView() {
   const { user } = useUser();
   const firestore = useFirestore();
 
+  const userDocRef = useMemoFirebase(() => (user ? doc(firestore, `users/${user.uid}`) : null), [user, firestore]);
+  const { data: userProfile } = useDoc(userDocRef);
+
+  // @ts-ignore
+  const partnerId = userProfile?.relatedId;
+
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
 
   const partnerBookingsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(bookingsCollectionRef, where('createdById', '==', user.uid));
-  }, [bookingsCollectionRef, user]);
+    if (!partnerId) return null;
+    return query(bookingsCollectionRef, where('partnerId', '==', partnerId));
+  }, [bookingsCollectionRef, partnerId]);
 
   const { data: partnerBookings } = useCollection<Booking>(partnerBookingsQuery);
 
   const recentBookingsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!partnerId) return null;
     return query(
       bookingsCollectionRef,
-      where('createdById', '==', user.uid),
+      where('partnerId', '==', partnerId),
       orderBy('createdAt', 'desc'),
       limit(5)
     );
-  }, [bookingsCollectionRef, user]);
+  }, [bookingsCollectionRef, partnerId]);
 
   const { data: recentBookings } = useCollection<Booking>(recentBookingsQuery);
 

@@ -5,17 +5,40 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import BookingsTable from "@/components/dashboard/bookings-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
+import { collection, query, orderBy, where, doc } from "firebase/firestore";
 import type { Booking, BookingStatus } from "@/lib/types";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BookingsPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
   
+  const userDocRef = useMemoFirebase(() => (user ? doc(firestore, `users/${user.uid}`) : null), [user, firestore]);
+  const { data: userProfile } = useDoc(userDocRef);
+
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
-  const bookingsQuery = useMemoFirebase(() => query(bookingsCollectionRef, orderBy('pickupTime', 'desc')), [bookingsCollectionRef]);
+  
+  const bookingsQuery = useMemoFirebase(() => {
+    if (!userProfile) return null;
+
+    // @ts-ignore
+    if (userProfile.role === 'admin') {
+      return query(bookingsCollectionRef, orderBy('pickupTime', 'desc'));
+    // @ts-ignore
+    } else if ((userProfile.role === 'partner' || userProfile.role === 'operator') && userProfile.relatedId) {
+    // @ts-ignore
+      return query(bookingsCollectionRef, where('partnerId', '==', userProfile.relatedId), orderBy('pickupTime', 'desc'));
+    // @ts-ignore
+    } else if (userProfile.role === 'driver' && userProfile.relatedId) {
+    // @ts-ignore
+        return query(bookingsCollectionRef, where('driverId', '==', userProfile.relatedId), orderBy('pickupTime', 'desc'));
+    }
+
+    return null;
+  }, [bookingsCollectionRef, userProfile]);
+
   const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
 
   return (
