@@ -6,8 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { ArrowLeft, User as UserIcon, Mail, Phone, Briefcase } from "lucide-react";
-import { doc, updateDoc, Timestamp } from "firebase/firestore";
+import { ArrowLeft, User as UserIcon, Mail, Phone, Briefcase, Building, Car } from "lucide-react";
+import { doc, updateDoc, collection } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,14 +29,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import type { User } from "@/lib/types";
+import { useFirestore, useDoc, useMemoFirebase, useCollection } from "@/firebase";
+import type { User, Partner, Operator, Driver } from "@/lib/types";
 
 const userFormSchema = z.object({
   name: z.string().min(1, "Name is required."),
   email: z.string().email("Invalid email address."),
   phone: z.string().min(1, "Phone number is required."),
-  role: z.enum(["admin", "partner", "driver"]),
+  role: z.enum(["admin", "partner", "driver", "operator"]),
+  relatedId: z.string().optional(),
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
@@ -51,6 +52,15 @@ export default function EditUserPage() {
   const userRef = useMemoFirebase(() => userId ? doc(firestore, "users", userId) : null, [firestore, userId]);
   const { data: user, isLoading: isUserLoading } = useDoc<User>(userRef);
 
+  const partnersRef = useMemoFirebase(() => collection(firestore, 'partners'), [firestore]);
+  const { data: partners } = useCollection<Partner>(partnersRef);
+
+  const operatorsRef = useMemoFirebase(() => collection(firestore, 'operators'), [firestore]);
+  const { data: operators } = useCollection<Operator>(operatorsRef);
+
+  const driversRef = useMemoFirebase(() => collection(firestore, 'drivers'), [firestore]);
+  const { data: drivers } = useCollection<Driver>(driversRef);
+
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -58,8 +68,11 @@ export default function EditUserPage() {
       email: "",
       phone: "",
       role: "driver",
+      relatedId: "",
     },
   });
+
+  const role = form.watch("role");
 
   React.useEffect(() => {
     if (user) {
@@ -70,6 +83,8 @@ export default function EditUserPage() {
         phone: user.phone || "",
         // @ts-ignore
         role: user.role || "driver",
+        // @ts-ignore
+        relatedId: user.relatedId || "",
       });
     }
   }, [user, form]);
@@ -96,6 +111,91 @@ export default function EditUserPage() {
         variant: "destructive",
       });
     }
+  }
+
+  const renderRelatedEntitySelect = () => {
+    if (role === 'partner') {
+      return (
+        <FormField
+          control={form.control}
+          name="relatedId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Related Partner</FormLabel>
+                <div className="relative">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger className="pl-10">
+                            <SelectValue placeholder="Select a partner" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {partners?.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )
+    }
+    if (role === 'operator') {
+      return (
+        <FormField
+          control={form.control}
+          name="relatedId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Related Operator</FormLabel>
+                <div className="relative">
+                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger className="pl-10">
+                            <SelectValue placeholder="Select an operator" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {operators?.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )
+    }
+    if (role === 'driver') {
+      return (
+        <FormField
+          control={form.control}
+          name="relatedId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Related Driver</FormLabel>
+                <div className="relative">
+                    <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger className="pl-10">
+                            <SelectValue placeholder="Select a driver profile" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {drivers?.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )
+    }
+    return null;
   }
   
   if (isUserLoading) {
@@ -213,6 +313,7 @@ export default function EditUserPage() {
                                 <SelectContent>
                                     <SelectItem value="admin">Admin</SelectItem>
                                     <SelectItem value="partner">Partner</SelectItem>
+                                    <SelectItem value="operator">Operator</SelectItem>
                                     <SelectItem value="driver">Driver</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -221,6 +322,7 @@ export default function EditUserPage() {
                     </FormItem>
                   )}
                 />
+                {renderRelatedEntitySelect()}
               </div>
 
               <Button type="submit" className="w-full md:w-auto" disabled={form.formState.isSubmitting}>

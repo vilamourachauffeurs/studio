@@ -1,3 +1,4 @@
+
 "use client";
 
 import AdminView from "@/components/dashboard/admin-view";
@@ -29,6 +30,7 @@ export default function DashboardPage() {
       case "admin":
         return <AdminView />;
       case "partner":
+      case "operator":
         return <PartnerView />;
       case "driver":
         return <DriverView />;

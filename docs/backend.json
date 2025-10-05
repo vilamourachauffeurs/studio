@@ -26,13 +26,12 @@
         },
         "role": {
           "type": "string",
-          "description": "User's role within the application (admin, partner, driver).",
-          "format": "string"
+          "description": "User's role within the application (admin, partner, driver, operator).",
+          "enum": ["admin", "partner", "driver", "operator"]
         },
         "relatedId": {
           "type": "string",
-          "description": "References the ID of the specific entity related to the user's role (e.g., Partner.id, Driver.id).",
-          "format": "string"
+          "description": "References the ID of the specific entity related to the user's role (e.g., Partner.id, Driver.id, Operator.id)."
         }
       },
       "required": [
@@ -384,5 +383,3 @@
     }
   }
 }
-
-    

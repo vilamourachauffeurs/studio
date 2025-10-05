@@ -2,7 +2,7 @@
 
 import { Timestamp } from "firebase/firestore";
 
-export type UserRole = "admin" | "partner" | "driver";
+export type UserRole = "admin" | "partner" | "driver" | "operator";
 
 export type BookingStatus =
   | "draft"
@@ -26,6 +26,7 @@ export type User = {
   email: string;
   photoURL: string;
   role: UserRole;
+  relatedId?: string;
 };
 
 export type Booking = {
@@ -111,5 +112,3 @@ export type Notification = {
   sentAt: Date;
   message: string;
 };
-
-    
