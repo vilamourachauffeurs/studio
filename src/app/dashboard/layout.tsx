@@ -27,7 +27,7 @@ export default function DashboardLayout({
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || isProfileLoading || !user) {
+  if (isUserLoading || isProfileLoading) {
     return (
       <div className="flex h-screen w-full">
         {/* Sidebar Skeleton */}
@@ -65,6 +65,17 @@ export default function DashboardLayout({
       </div>
     );
   }
+  
+  if (!user) {
+    // If after loading there is still no user, we will be redirected by the useEffect.
+    // We can show a minimal loading or blank state here to prevent rendering children.
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <p>Authenticating...</p>
+      </div>
+    )
+  }
+
 
   // @ts-ignore
   if (user && !userProfile && !isProfileLoading) {
