@@ -27,6 +27,7 @@ export type User = {
   photoURL: string;
   role: UserRole;
   relatedId?: string;
+  phone: string;
 };
 
 export type Booking = {

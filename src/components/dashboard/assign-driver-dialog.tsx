@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2, Rocket } from "lucide-react";
-import type { Booking, Driver, Partner } from "@/lib/types";
+import type { Booking, Driver, Partner, Operator } from "@/lib/types";
 import { getDriverSuggestion } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -54,6 +54,9 @@ export function AssignDriverDialog({
 
   const partnersCollectionRef = useMemoFirebase(() => collection(firestore, 'partners'), [firestore]);
   const { data: partners, isLoading: partnersLoading } = useCollection<Partner>(partnersCollectionRef);
+  
+  const operatorsCollectionRef = useMemoFirebase(() => collection(firestore, 'operators'), [firestore]);
+  const { data: operators, isLoading: operatorsLoading } = useCollection<Operator>(operatorsCollectionRef);
 
 
   const handleSuggestion = async () => {
@@ -97,15 +100,20 @@ export function AssignDriverDialog({
         if (type === 'driver') {
             const driver = drivers?.find(d => d.id === id);
             entityName = driver?.name || 'Driver';
-            await updateDoc(bookingRef, { driverId: id, status: 'assigned' });
+            await updateDoc(bookingRef, { driverId: id, partnerId: null, status: 'assigned' });
         } else if (type === 'partner') {
             const partner = partners?.find(p => p.id === id);
             entityName = partner?.name || 'Partner';
-            await updateDoc(bookingRef, { partnerId: id, status: 'assigned' });
+            await updateDoc(bookingRef, { partnerId: id, driverId: null, status: 'assigned' });
+        } else if (type === 'operator') {
+            const operator = operators?.find(o => o.id === id);
+            entityName = operator?.name || 'Operator';
+            // Assuming operators are treated like partners for assignment
+            await updateDoc(bookingRef, { partnerId: id, driverId: null, status: 'assigned' });
         }
         
         toast({
-            title: `${type === 'driver' ? 'Driver' : 'Partner'} Assigned!`,
+            title: `${type.charAt(0).toUpperCase() + type.slice(1)} Assigned!`,
             description: `${entityName} has been assigned to booking #${booking.id.substring(0,7)}.`
         });
         onOpenChange(false);
@@ -137,10 +145,10 @@ export function AssignDriverDialog({
               value={selectedEntity || undefined}
             >
               <SelectTrigger id="entity">
-                <SelectValue placeholder="Select a driver or partner" />
+                <SelectValue placeholder="Select a driver, operator, or partner" />
               </SelectTrigger>
               <SelectContent>
-                {driversLoading || partnersLoading ? (
+                {driversLoading || partnersLoading || operatorsLoading ? (
                     <div className="flex items-center justify-center p-4">
                         <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
@@ -151,6 +159,14 @@ export function AssignDriverDialog({
                             {drivers?.map((driver) => (
                             <SelectItem key={driver.id} value={`driver_${driver.id}`}>
                                 {driver.name} - ({driver.status})
+                            </SelectItem>
+                            ))}
+                        </SelectGroup>
+                        <SelectGroup>
+                            <SelectLabel>Operators</SelectLabel>
+                            {operators?.map((operator) => (
+                            <SelectItem key={operator.id} value={`operator_${operator.id}`}>
+                                {operator.name}
                             </SelectItem>
                             ))}
                         </SelectGroup>
