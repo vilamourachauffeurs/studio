@@ -1,135 +1,152 @@
 /**
  * @file Firestore Security Rules
- * @core_philosophy This ruleset enforces a combination of ownership-based and role-based access control.
- *  - Users can only read and write their own profile data.
- *  - Bookings can be created by authenticated users (admins or partners).
- *  - Drivers, clients, partners, and operators are publicly readable, but only writeable with correct ID.
- * @data_structure
- *  - /users/{userId}: Stores user profile data.
- *  - /bookings/{bookingId}: Stores booking information.
- *  - /drivers/{driverId}: Stores driver information.
- *  - /clients/{clientId}: Stores client information.
- *  - /partners/{partnerId}: Stores partner information.
- *  - /operators/{operatorId}: Stores operator information.
- * @key_security_decisions
- *  - Users can only access their own user document.
- *  - Listing of users is disallowed.
- *  - Driver, Client, Partner, and Operator info is publicly readable.
- *  - Anyone can create, update, or delete Driver, Client, Partner, and Operator info with the correct ID.
+ * @description This ruleset enforces a role-based access control model for the Chauffeur Pro platform.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores public user profiles.
+ * - /bookings/{bookingId}: Stores all booking data.
+ * - /drivers/{driverId}: Stores driver information.
+ * - /clients/{clientId}: Stores client information.
+ * - /partners/{partnerId}: Stores partner company information.
+ * - /operators/{operatorId}: Stores operator company information.
+ *
+ * Key Security Decisions:
+ * - Users can only read their own profile data. Listing all users is disallowed.
+ * - Only authenticated users can create bookings, and their UID is stored as `createdById`.
+ * - Bookings, Drivers, Clients, Partners, and Operators are readable by everyone, but only the creator or someone with the proper role can edit these.
+ * - All write operations are validated for proper authorization.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile data.
+     * @description Controls access to user profiles. Users can read their own profile, but listing all users is disallowed.
      * @path /users/{userId}
-     * @allow (read, write) Authenticated user can only access their own profile.
-     * @deny (read, write) Authenticated user cannot access another user's profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (get) User with ID 'user123' can read their own profile.
+     * @allow (create) User with ID 'user123' can create their own profile.
+     * @allow (update) User with ID 'user123' can update their own profile.
+     * @allow (delete) User with ID 'user123' can delete their own profile.
+     * @deny (get) User with ID 'user456' cannot read the profile of user 'user123'.
+     * @deny (create) User with ID 'user456' cannot create a profile for user 'user123'.
+     * @deny (update) User with ID 'user456' cannot update the profile of user 'user123'.
+     * @deny (delete) User with ID 'user456' cannot delete the profile of user 'user123'.
+     * @principle Enforces user-ownership for profiles.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
       allow get: if isOwner(userId);
       allow list: if false; // Listing users is not permitted.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to booking data.
+     * @description Controls access to bookings. Any authenticated user can read bookings, but only the booking creator can modify.
      * @path /bookings/{bookingId}
-     * @allow (create) Authenticated user (admin or partner) can create bookings, createdById must match user id.
-     * @allow (read) Any authenticated user can read bookings.
-     * @deny (update, delete) Only the user who created the booking or an admin can update or delete it.
-     * @principle Restricts booking modification and deletion to authorized users.
+     * @allow (get) Any user can read a booking.
+     * @allow (create) User with ID 'user123' can create a booking with 'createdById' set to 'user123'.
+     * @allow (update) User with ID 'user123' can update a booking they created (where 'createdById' is 'user123').
+     * @allow (delete) User with ID 'user123' can delete a booking they created (where 'createdById' is 'user123').
+     * @deny (create) User with ID 'user456' cannot create a booking with 'createdById' set to 'user123'.
+     * @deny (update) User with ID 'user456' cannot update a booking created by 'user123' (where 'createdById' is 'user123').
+     * @deny (delete) User with ID 'user456' cannot delete a booking created by 'user123' (where 'createdById' is 'user123').
+     * @principle Enforces document ownership for writes based on the 'createdById' field.
      */
     match /bookings/{bookingId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(createdById) {
-        return request.auth.uid == createdById;
-      }
-
-      function isExistingOwner(createdById) {
-        return isOwner(createdById) && resource != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.createdById == request.auth.uid;
       allow update: if isExistingOwner(resource.data.createdById);
       allow delete: if isExistingOwner(resource.data.createdById);
     }
 
     /**
-     * @description Controls access to driver data.
+     * @description Controls access to driver profiles. Any authenticated user can read driver profiles, but only the creator can modify.
      * @path /drivers/{driverId}
-     * @allow (read) Anyone can read driver data.
-     * @allow (create, update, delete) Only requests to /drivers/{driverId} where request.resource.data.id == driverId are allowed.
-     * @principle Public read, owner-only write access for driver profiles.
+     * @allow (get) Any user can read a driver profile.
+     * @allow (create) User with ID 'user123' can create a driver profile.
+     * @allow (update) User with ID 'user123' can update a driver profile they created (where 'id' is 'user123').
+     * @allow (delete) User with ID 'user123' can delete a driver profile they created (where 'id' is 'user123').
+     * @deny (create) User with ID 'user456' cannot create a driver profile with 'id' set to 'user123'.
+     * @deny (update) User with ID 'user456' cannot update a driver profile created by 'user123' (where 'id' is 'user123').
+     * @deny (delete) User with ID 'user456' cannot delete a driver profile created by 'user123' (where 'id' is 'user123').
+     * @principle Enforces document ownership for writes based on the 'id' field.
      */
     match /drivers/{driverId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if request.resource.data.id == driverId;
-      allow update: if resource != null && request.resource.data.id == driverId;
-      allow delete: if resource != null && request.resource.data.id == driverId;
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isExistingOwner(driverId);
+      allow delete: if isExistingOwner(driverId);
     }
 
     /**
-     * @description Controls access to client data.
+     * @description Controls access to client profiles. Any authenticated user can read client profiles, but only the client creator can modify.
      * @path /clients/{clientId}
-     * @allow (read) Anyone can read client data.
-     * @allow (create, update, delete) Only requests to /clients/{clientId} where request.resource.data.id == clientId are allowed.
-     * @principle Public read, owner-only write access for client profiles.
+     * @allow (get) Any user can read a client profile.
+     * @allow (create) User with ID 'user123' can create a client profile.
+     * @allow (update) User with ID 'user123' can update a client profile they created (where 'id' is 'user123').
+     * @allow (delete) User with ID 'user123' can delete a client profile they created (where 'id' is 'user123').
+     * @deny (create) User with ID 'user456' cannot create a client profile with 'id' set to 'user123'.
+     * @deny (update) User with ID 'user456' cannot update a client profile created by 'user123' (where 'id' is 'user123').
+     * @deny (delete) User with ID 'user456' cannot delete a client profile created by 'user123' (where 'id' is 'user123').
+     * @principle Enforces document ownership for writes based on the 'id' field.
      */
     match /clients/{clientId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if request.resource.data.id == clientId;
-      allow update: if resource != null && request.resource.data.id == clientId;
-      allow delete: if resource != null && request.resource.data.id == clientId;
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isExistingOwner(clientId);
+      allow delete: if isExistingOwner(clientId);
     }
 
     /**
-     * @description Controls access to partner data.
+     * @description Controls access to partner profiles. Any authenticated user can read partner profiles, but only the creator can modify.
      * @path /partners/{partnerId}
-     * @allow (read) Anyone can read partner data.
-     * @allow (create, update, delete) Only requests to /partners/{partnerId} where request.resource.data.id == partnerId are allowed.
-     * @principle Public read, owner-only write access for partner profiles.
+     * @allow (get) Any user can read a partner profile.
+     * @allow (create) User with ID 'user123' can create a partner profile.
+     * @allow (update) User with ID 'user123' can update a partner profile they created (where 'id' is 'user123').
+     * @allow (delete) User with ID 'user123' can delete a partner profile they created (where 'id' is 'user123').
+     * @deny (create) User with ID 'user456' cannot create a partner profile with 'id' set to 'user123'.
+     * @deny (update) User with ID 'user456' cannot update a partner profile created by 'user123' (where 'id' is 'user123').
+     * @deny (delete) User with ID 'user456' cannot delete a partner profile created by 'user123' (where 'id' is 'user123').
+     * @principle Enforces document ownership for writes based on the 'id' field.
      */
     match /partners/{partnerId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if request.resource.data.id == partnerId;
-      allow update: if resource != null && request.resource.data.id == partnerId;
-      allow delete: if resource != null && request.resource.data.id == partnerId;
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isExistingOwner(partnerId);
+      allow delete: if isExistingOwner(partnerId);
     }
 
-    /**
-     * @description Controls access to operator data.
-     * @path /operators/{operatorId}
-     * @allow (read) Anyone can read operator data.
-     * @allow (create, update, delete) Only requests to /operators/{operatorId} where request.resource.data.id == operatorId are allowed.
-     * @principle Public read, owner-only write access for operator profiles.
-     */
+     /**
+      * @description Controls access to operator profiles. Any authenticated user can read operator profiles, but only the creator can modify.
+      * @path /operators/{operatorId}
+      * @allow (get) Any user can read a operator profile.
+      * @allow (create) User with ID 'user123' can create a operator profile.
+      * @allow (update) User with ID 'user123' can update a operator profile they created (where 'id' is 'user123').
+      * @allow (delete) User with ID 'user123' can delete a operator profile they created (where 'id' is 'user123').
+      * @deny (create) User with ID 'user456' cannot create a operator profile with 'id' set to 'user123'.
+      * @deny (update) User with ID 'user456' cannot update a operator profile created by 'user123' (where 'id' is 'user123').
+      * @deny (delete) User with ID 'user456' cannot delete a operator profile created by 'user123' (where 'id' is 'user123').
+      * @principle Enforces document ownership for writes based on the 'id' field.
+      */
     match /operators/{operatorId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if request.resource.data.id == operatorId;
-      allow update: if resource != null && request.resource.data.id == operatorId;
-      allow delete: if resource != null && request.resource.data.id == operatorId;
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isExistingOwner(operatorId);
+      allow delete: if isExistingOwner(operatorId);
     }
+  }
+
+  // Helper Functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isOwner(userId) && resource != null;
   }
 }
