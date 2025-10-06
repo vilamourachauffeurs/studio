@@ -48,6 +48,8 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    if (!auth || !firestore) return;
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/dashboard");
@@ -55,7 +57,7 @@ export default function LoginPage() {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          const user = userCredential.user;
+          const newUser = userCredential.user;
           let role: UserRole = "driver";
           if (email.startsWith("admin")) {
             role = "admin";
@@ -63,10 +65,10 @@ export default function LoginPage() {
             role = "partner";
           }
           
-          await setDoc(doc(firestore, "users", user.uid), {
-            id: user.uid,
-            email: user.email,
-            name: user.email,
+          await setDoc(doc(firestore, "users", newUser.uid), {
+            id: newUser.uid,
+            email: newUser.email,
+            name: newUser.email,
             phone: '',
             role: role,
           });
@@ -84,6 +86,7 @@ export default function LoginPage() {
   };
 
   const handleLogout = async () => {
+    if (!auth) return;
     await signOut(auth);
     router.refresh(); // Refresh the page to clear state and show login form
   };
@@ -138,8 +141,8 @@ export default function LoginPage() {
               Use roles: admin@example.com, partner@example.com, driver@example.com. Password is 'password' for all.
             </p>
 
-            <Button type="submit" className="w-full text-lg py-6">
-              Login
+            <Button type="submit" className="w-full text-lg py-6" disabled={isUserLoading}>
+              {isUserLoading ? 'Loading...' : 'Login'}
             </Button>
           </form>
         </CardContent>
