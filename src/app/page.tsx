@@ -54,7 +54,8 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/dashboard");
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+      if (error.code === 'auth/user-not-found') {
+        // If user does not exist, create a new one
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const newUser = userCredential.user;
@@ -63,6 +64,8 @@ export default function LoginPage() {
             role = "admin";
           } else if (email.startsWith("partner")) {
             role = "partner";
+          } else if (email.startsWith("operator")) {
+            role = "operator";
           }
           
           await setDoc(doc(firestore, "users", newUser.uid), {
@@ -79,6 +82,7 @@ export default function LoginPage() {
           console.error(createUserError);
         }
       } else {
+        // For all other errors (including wrong password), just show the error
         setError(error.message);
         console.error(error);
       }
