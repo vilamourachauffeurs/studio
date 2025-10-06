@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Car, KeyRound, Mail, UserCog } from "lucide-react";
+import { Car, KeyRound, Mail, UserCog, LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ import {
 import { useUser, useAuth } from "@/firebase";
 import type { UserRole } from "@/lib/types";
 import Logo from "@/components/logo";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
@@ -82,6 +83,12 @@ export default function LoginPage() {
     }
   };
 
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.refresh(); // Refresh the page to clear state and show login form
+  };
+
+
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
       <div className="absolute top-8 left-8">
@@ -136,10 +143,16 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex-col items-center gap-4">
           <p className="text-sm text-muted-foreground">
             Don't have an account? Contact support.
           </p>
+           {user && !isUserLoading && (
+              <Button variant="outline" onClick={handleLogout} className="w-full">
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout from {user.email}
+              </Button>
+            )}
         </CardFooter>
       </Card>
     </main>
