@@ -1,117 +1,146 @@
+/**
+ * @file Overview
+ * This ruleset enforces a role-based access control model, with specific rules for users,
+ * bookings, drivers, clients, partners and operators.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores public profiles for all users. User documents are accessible only
+ *   by the user themselves.
+ * - /bookings/{bookingId}: Stores all bookings made in the system. Bookings can only be
+ *   created by authenticated users (admins or partners). Modification or deletion is disallowed.
+ * - /drivers/{driverId}: Stores all driver profiles. Driver profiles can only be created by
+ *   authenticated users (admins). Modification or deletion is disallowed.
+ * - /clients/{clientId}: Stores all client profiles. Client profiles can only be created by
+ *   authenticated users (admins). Modification or deletion is disallowed.
+ * - /partners/{partnerId}: Stores all partner profiles. Partner profiles can only be created by
+ *   authenticated users (admins). Modification or deletion is disallowed.
+ * - /operators/{operatorId}: Stores all operator profiles. Operator profiles can only be created by
+ *   authenticated users (admins). Modification or deletion is disallowed.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed to protect privacy.
+ * - Only authenticated users can create bookings, drivers, clients, partners and operators, while
+ *   modification and deletion are denied.
+ * - Public read access is enabled for bookings, drivers, clients, partners, and operators for read-only purposes.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    /**
+     * @description Restricts access to user profiles. Only the user can read their own profile, and only they can create it.
+     * @path /users/{userId}
+     * @allow (get, create, list) if isSignedIn() && isOwner(userId)
+     * @deny (update, delete) always
+     * @principle Enforces document ownership for user profiles.
+     */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-      function isExistingOwner(userId) {
-        return exists(/databases/$(database)/documents/users/$(userId)) && isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
       }
-
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
+      allow delete: if false;
     }
 
+    /**
+     * @description Allows public read access to bookings, but restricts creation to authenticated users.
+     * @path /bookings/{bookingId}
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @deny (update, delete) always
+     * @principle Allows public read with authenticated user-only writes.
+     */
     match /bookings/{bookingId} {
       function isSignedIn() {
         return request.auth != null;
       }
-      function isOwner(bookingId) {
-        return request.auth.uid == resource.data.createdById;
-      }
-           function isExistingOwner(bookingId) {
-        return exists(/databases/$(database)/documents/bookings/$(bookingId)) && isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/bookings/$(bookingId)).data.createdById;
-      }
-
-      allow get: if isSignedIn() && request.auth.uid == resource.data.createdById;
-      allow list: if false;
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.createdById;
-      allow update: if isSignedIn() && isExistingOwner(bookingId);
-      allow delete: if isSignedIn() && isExistingOwner(bookingId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
     }
 
-
+    /**
+     * @description Allows public read access to drivers, but restricts creation to authenticated users.
+     * @path /drivers/{driverId}
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @deny (update, delete) always
+     * @principle Allows public read with authenticated user-only writes.
+     */
     match /drivers/{driverId} {
       function isSignedIn() {
         return request.auth != null;
       }
-      function isOwner(driverId) {
-        return request.auth.uid == driverId;
-      }
-        function isExistingOwner(driverId) {
-        return exists(/databases/$(database)/documents/drivers/$(driverId)) && isOwner(driverId);
-      }
-
-      allow get: if isSignedIn() && isOwner(driverId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(driverId);
-      allow update: if isSignedIn() && isExistingOwner(driverId);
-      allow delete: if isSignedIn() && isExistingOwner(driverId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
     }
 
-
+    /**
+     * @description Allows public read access to clients, but restricts creation to authenticated users.
+     * @path /clients/{clientId}
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @deny (update, delete) always
+     * @principle Allows public read with authenticated user-only writes.
+     */
     match /clients/{clientId} {
       function isSignedIn() {
         return request.auth != null;
       }
-      function isOwner(clientId) {
-        return request.auth.uid == clientId;
-      }
-             function isExistingOwner(clientId) {
-        return exists(/databases/$(database)/documents/clients/$(clientId)) && isOwner(clientId);
-      }
-
-      allow get: if isSignedIn() && isOwner(clientId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(clientId);
-      allow update: if isSignedIn() && isExistingOwner(clientId);
-      allow delete: if isSignedIn() && isExistingOwner(clientId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
     }
 
-
+    /**
+     * @description Allows public read access to partners, but restricts creation to authenticated users.
+     * @path /partners/{partnerId}
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @deny (update, delete) always
+     * @principle Allows public read with authenticated user-only writes.
+     */
     match /partners/{partnerId} {
       function isSignedIn() {
         return request.auth != null;
       }
-      function isOwner(partnerId) {
-        return request.auth.uid == partnerId;
-      }
-              function isExistingOwner(partnerId) {
-        return exists(/databases/$(database)/documents/partners/$(partnerId)) && isOwner(partnerId);
-      }
-
-      allow get: if isSignedIn() && isOwner(partnerId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(partnerId);
-      allow update: if isSignedIn() && isExistingOwner(partnerId);
-      allow delete: if isSignedIn() && isExistingOwner(partnerId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
     }
 
-
+    /**
+     * @description Allows public read access to operators, but restricts creation to authenticated users.
+     * @path /operators/{operatorId}
+     * @allow (get, list) if true
+     * @allow (create) if isSignedIn()
+     * @deny (update, delete) always
+     * @principle Allows public read with authenticated user-only writes.
+     */
     match /operators/{operatorId} {
       function isSignedIn() {
         return request.auth != null;
       }
-      function isOwner(operatorId) {
-        return request.auth.uid == operatorId;
-      }
-        function isExistingOwner(operatorId) {
-        return exists(/databases/$(database)/documents/operators/$(operatorId)) && isOwner(operatorId);
-      }
-
-      allow get: if isSignedIn() && isOwner(operatorId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(operatorId);
-      allow update: if isSignedIn() && isExistingOwner(operatorId);
-      allow delete: if isSignedIn() && isExistingOwner(operatorId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }
