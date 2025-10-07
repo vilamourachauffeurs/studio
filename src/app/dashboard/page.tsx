@@ -4,6 +4,7 @@
 import AdminView from "@/components/dashboard/admin-view";
 import DriverView from "@/components/dashboard/driver-view";
 import PartnerView from "@/components/dashboard/partner-view";
+import OperatorView from "@/components/dashboard/operator-view";
 import { useUser, useMemoFirebase } from "@/firebase";
 import { doc } from 'firebase/firestore';
 import { useFirestore, useDoc } from '@/firebase';
@@ -30,8 +31,9 @@ export default function DashboardPage() {
       case "admin":
         return <AdminView />;
       case "partner":
-      case "operator":
         return <PartnerView />;
+      case "operator":
+        return <OperatorView />;
       case "driver":
         return <DriverView />;
       default:
