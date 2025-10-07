@@ -153,9 +153,12 @@ export default function EditBookingPage() {
 
     try {
         const bookingDocRef = doc(firestore, 'bookings', bookingId);
-        await updateDoc(bookingDocRef, {
-            ...data,
-        });
+        const updateData = {
+          ...data,
+          partnerId: data.partnerId || null,
+          operatorId: data.operatorId || null,
+        }
+        await updateDoc(bookingDocRef, updateData);
 
         toast({
             title: "Booking Updated!",
@@ -537,3 +540,5 @@ export default function EditBookingPage() {
     </div>
   );
 }
+
+    

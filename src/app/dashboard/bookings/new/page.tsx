@@ -135,12 +135,16 @@ export default function NewBookingPage() {
     const bookingStatus = isAdmin ? 'approved' : 'pending_admin';
     
     try {
-        const docRef = await addDoc(collection(firestore, "bookings"), {
-            ...data,
-            status: bookingStatus,
-            createdById: user.uid,
-            createdAt: serverTimestamp(),
-        });
+        const bookingData = {
+          ...data,
+          partnerId: data.partnerId || null,
+          operatorId: data.operatorId || null,
+          status: bookingStatus,
+          createdById: user.uid,
+          createdAt: serverTimestamp(),
+        };
+
+        const docRef = await addDoc(collection(firestore, "bookings"), bookingData);
         
         toast({
             title: "Booking Created!",
@@ -493,3 +497,5 @@ export default function NewBookingPage() {
     </div>
   );
 }
+
+    
