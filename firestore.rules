@@ -1,6 +1,6 @@
 /**
  * @file Overview
- * This ruleset enforces a role-based access control model, with specific rules for users,
+ * This ruleset is enforces a role-based access control model, with specific rules for users,
  * bookings, drivers, clients, partners and operators.
  *
  * Data Structure:
