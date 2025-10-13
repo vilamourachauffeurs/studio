@@ -197,8 +197,14 @@ const toDate = (timestamp: Timestamp | Date): Date => {
 
 function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: boolean }) {
   const router = useRouter();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const [isAssignDriverOpen, setIsAssignDriverOpen] = useState(false);
   const [isChangeStatusOpen, setIsChangeStatusOpen] = useState(false);
+
+  const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
+  const { data: userProfile } = useDoc(userDocRef);
+  const userRole = userProfile ? (userProfile as any).role : null;
 
   const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
     const target = e.target as HTMLElement;
@@ -210,6 +216,9 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
   };
 
   const pickupDate = toDate(booking.pickupTime);
+  
+  // Operators cannot change status
+  const canChangeStatus = userRole !== 'operator';
 
   return (
     <>
@@ -234,11 +243,15 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
         <TableCell onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2">
                 <Badge
-                    onClick={() => setIsChangeStatusOpen(true)}
-                    className={cn("capitalize cursor-pointer", statusStyles[booking.status])}
+                    onClick={canChangeStatus ? () => setIsChangeStatusOpen(true) : undefined}
+                    className={cn(
+                      "capitalize",
+                      canChangeStatus && "cursor-pointer",
+                      statusStyles[booking.status]
+                    )}
                     variant="outline"
                 >
-                    <Pencil className="mr-2 h-3 w-3" />
+                    {canChangeStatus && <Pencil className="mr-2 h-3 w-3" />}
                     {booking.status.replace(/_/g, " ")}
                 </Badge>
                 {booking.bookingType === 'rightNow' && (
@@ -251,7 +264,7 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
         </TableCell>
         <TableCell onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2">
-            {booking.status === 'approved' && (
+            {booking.status === 'approved' && userRole === 'admin' && (
               <Button size="sm" variant="outline" onClick={() => setIsAssignDriverOpen(true)}>
                 <Car className="mr-2 h-4 w-4" />
                 Assign

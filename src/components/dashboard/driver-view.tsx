@@ -8,7 +8,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { collection, query, where, doc } from "firebase/firestore";
+import { collection, query, where, doc, orderBy, Timestamp } from "firebase/firestore";
 import type { Booking, Driver } from "@/lib/types";
 
 export default function DriverView() {
@@ -28,16 +28,33 @@ export default function DriverView() {
 
   const driverBookingsQuery = useMemoFirebase(() => {
     if (!driverId) return null;
-    return query(bookingsCollectionRef, where('driverId', '==', driverId));
+    return query(
+      bookingsCollectionRef, 
+      where('driverId', '==', driverId),
+      orderBy('pickupTime', 'asc')
+    );
   }, [bookingsCollectionRef, driverId]);
 
   const { data: driverBookings } = useCollection<Booking>(driverBookingsQuery);
 
+  // Get current time to filter out past bookings
+  const now = new Date();
+  
   const upcomingBookings = driverBookings
-    ?.filter((b) => b.status === "assigned" || b.status === "confirmed")
+    ?.filter((b) => {
+      const pickupTime = b.pickupTime instanceof Timestamp 
+        ? b.pickupTime.toDate() 
+        : new Date(b.pickupTime);
+      return pickupTime >= now && (b.status === "assigned" || b.status === "confirmed");
+    })
     .slice(0, 5);
 
-  const newJobsCount = driverBookings?.filter(b => b.status === 'assigned').length || 0;
+  const newJobsCount = driverBookings?.filter(b => {
+    const pickupTime = b.pickupTime instanceof Timestamp 
+      ? b.pickupTime.toDate() 
+      : new Date(b.pickupTime);
+    return pickupTime >= now && b.status === 'assigned';
+  }).length || 0;
 
   return (
     <div className="space-y-6">

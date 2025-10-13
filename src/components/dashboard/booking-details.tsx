@@ -51,7 +51,9 @@ import { Separator } from "../ui/separator";
 import { AssignDriverDialog } from "./assign-driver-dialog";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { updateBookingStatus } from "@/lib/actions";
+import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { updateDoc } from "firebase/firestore";
 import { ChangeStatusDialog } from "./change-status-dialog";
 
 const statusStyles: Record<BookingStatus, string> = {
@@ -98,22 +100,35 @@ function InfoRow({
 export default function BookingDetails({ booking }: { booking: Booking }) {
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = useUser();
+    const firestore = useFirestore();
     const [isAssignDriverOpen, setIsAssignDriverOpen] = useState(false);
     const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
     const [isChangeStatusOpen, setIsChangeStatusOpen] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
 
+    const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
+    const { data: userProfile } = useDoc(userDocRef);
+    const userRole = userProfile ? (userProfile as any).role : null;
+
+    // Operators cannot change status or assign drivers
+    const canChangeStatus = userRole !== 'operator';
+    const canAssignDriver = userRole === 'admin';
 
     const handleCancelBooking = async () => {
         setIsCancelling(true);
-        const result = await updateBookingStatus(booking.id, "cancelled");
-        setIsCancelling(false);
-        if (result.success) {
+        try {
+            const bookingRef = doc(firestore, "bookings", booking.id);
+            await updateDoc(bookingRef, { status: "cancelled" });
+            
             toast({ title: "Booking Cancelled", description: `Booking #${booking.id.substring(0,7)} has been cancelled.`});
             setIsCancelAlertOpen(false);
             router.refresh(); // Re-fetches data on the page
-        } else {
-            toast({ title: "Error", description: result.error, variant: "destructive" });
+        } catch (error: any) {
+            console.error("Error cancelling booking:", error);
+            toast({ title: "Error", description: error?.message || "Failed to cancel booking.", variant: "destructive" });
+        } finally {
+            setIsCancelling(false);
         }
     }
 
@@ -149,19 +164,25 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                 <div>
                     <h1 className="text-3xl font-headline flex items-center gap-4">
                         <span>Booking #{booking.id.substring(0,7)}</span>
-                         <div className={cn("flex items-center rounded-full border text-base font-medium overflow-hidden", statusStyles[booking.status])}>
-                            <span className="capitalize px-3 py-1">{booking.status.replace("_", " ")}</span>
-                             <div className="h-full w-px bg-current opacity-40"></div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-none hover:bg-black/10"
-                                onClick={() => setIsChangeStatusOpen(true)}
-                            >
-                                <Pencil className="h-4 w-4" />
-                                <span className="sr-only">Change Status</span>
-                            </Button>
-                         </div>
+                         {canChangeStatus ? (
+                            <div className={cn("flex items-center rounded-full border text-base font-medium overflow-hidden", statusStyles[booking.status])}>
+                                <span className="capitalize px-3 py-1">{booking.status.replace("_", " ")}</span>
+                                <div className="h-full w-px bg-current opacity-40"></div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-none hover:bg-black/10"
+                                    onClick={() => setIsChangeStatusOpen(true)}
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only">Change Status</span>
+                                </Button>
+                            </div>
+                         ) : (
+                            <Badge className={cn("text-base capitalize", statusStyles[booking.status])}>
+                                {booking.status.replace("_", " ")}
+                            </Badge>
+                         )}
                     </h1>
                     <p className="text-muted-foreground">
                         Created on {formatTimestamp(booking.createdAt)}
@@ -169,21 +190,17 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => router.push(`/dashboard/bookings/${booking.id}/edit`)}><FilePen className="mr-2" /> Edit Booking</Button>
-                <Button onClick={() => setIsAssignDriverOpen(true)}><Car className="mr-2"/> Assign Driver</Button>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                            <MoreVertical />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="text-destructive" onClick={() => setIsCancelAlertOpen(true)}>
-                             <XCircle className="mr-2"/>
-                            <span>Cancel Booking</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="outline" onClick={() => router.push(`/dashboard/bookings/${booking.id}/edit`)}>
+                    <FilePen className="mr-2" /> Edit
+                </Button>
+                {canAssignDriver && (
+                    <Button onClick={() => setIsAssignDriverOpen(true)}>
+                        <Car className="mr-2"/> Assign Driver
+                    </Button>
+                )}
+                <Button variant="destructive" onClick={() => setIsCancelAlertOpen(true)}>
+                    <XCircle className="mr-2"/> Cancel
+                </Button>
             </div>
         </div>
 

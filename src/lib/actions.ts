@@ -10,7 +10,6 @@ import {
   type SuggestDriverForBookingInput,
 } from "@/ai/flows/suggest-driver-for-booking";
 import { BookingStatus } from "./types";
-import { firestore } from "@/firebase/server";
 
 
 export async function getDriverSuggestion(
@@ -36,12 +35,7 @@ export async function getNotesSummary(input: SummarizeClientNotesInput) {
 }
 
 export async function updateBookingStatus(bookingId: string, status: BookingStatus) {
-    try {
-        const bookingRef = firestore.collection("bookings").doc(bookingId);
-        await bookingRef.update({ status });
-        return { success: true };
-    } catch (error) {
-        console.error("Error updating booking status:", error);
-        return { success: false, error: "Failed to update booking status." };
-    }
+    // This is now a client-side only function, not a server action
+    // It will be called from the client component directly
+    return { success: false, error: "This function should not be called from server side." };
 }

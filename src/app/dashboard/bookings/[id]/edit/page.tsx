@@ -59,7 +59,7 @@ const bookingFormSchema = z.object({
   partnerId: z.string().optional(),
   operatorId: z.string().optional(),
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
-  paymentType: z.enum(["driver", "mb", "account"]),
+  paymentType: z.enum(["driver", "account"]),
   notes: z.string().optional(),
   bookingType: z.enum(["rightNow", "inAdvance"]),
 });
@@ -76,6 +76,14 @@ export default function EditBookingPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const router = useRouter();
+  const { user } = useUser();
+
+  const userDocRef = useMemoFirebase(() => user ? doc(firestore, `users/${user.uid}`) : null, [user, firestore]);
+  const { data: userProfile } = useDoc(userDocRef);
+  
+  // @ts-ignore
+  const userRole = userProfile?.role;
+  const isOperatorUser = userRole === 'operator';
 
   const bookingRef = useMemoFirebase(() => bookingId ? doc(firestore, "bookings", bookingId) : null, [firestore, bookingId]);
   const { data: booking, isLoading: isBookingLoading } = useDoc<Booking>(bookingRef);
@@ -444,7 +452,11 @@ export default function EditBookingPage() {
                         <FormLabel>Operator / Partner (Optional)</FormLabel>
                         <div className="relative">
                             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
-                             <Select onValueChange={handleEntitySelect} value={form.getValues().operatorId ? `operator_${form.getValues().operatorId}` : form.getValues().partnerId ? `partner_${form.getValues().partnerId}` : undefined}>
+                             <Select 
+                                onValueChange={handleEntitySelect} 
+                                value={form.getValues().operatorId ? `operator_${form.getValues().operatorId}` : form.getValues().partnerId ? `partner_${form.getValues().partnerId}` : undefined}
+                                disabled={isOperatorUser}
+                             >
                                 <FormControl>
                                 <SelectTrigger className="pl-10">
                                     <SelectValue placeholder="Select an operator or partner" />
@@ -467,7 +479,9 @@ export default function EditBookingPage() {
                             </Select>
                         </div>
                         <FormDescription>
-                            If this booking is on behalf of an operator or partner company.
+                            {isOperatorUser 
+                                ? "Operator field is locked and cannot be changed." 
+                                : "If this booking is on behalf of an operator or partner company."}
                         </FormDescription>
                         <FormMessage />
                         </FormItem>
@@ -504,7 +518,6 @@ export default function EditBookingPage() {
                                 defaultValue="driver"
                             >
                                 <ToggleGroupItem value="driver">Driver</ToggleGroupItem>
-                                <ToggleGroupItem value="mb">MB</ToggleGroupItem>
                                 <ToggleGroupItem value="account">Account</ToggleGroupItem>
                             </ToggleGroup>
                         </FormControl>
