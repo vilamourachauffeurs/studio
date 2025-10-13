@@ -12,6 +12,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { sendNotification } from './handle-notification-flow';
 
 const SuggestDriverForBookingInputSchema = z.object({
   pickupLocation: z.string().describe('The pickup location of the booking.'),
@@ -101,6 +102,15 @@ const suggestDriverForBookingFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
+
+    if (output) {
+      await sendNotification({
+        type: 'job_assigned',
+        recipientId: output.driverId,
+        message: `You have been assigned a new job from ${input.pickupLocation} to ${input.dropoffLocation}.`,
+      });
+    }
+
     return output!;
   }
 );
