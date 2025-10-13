@@ -58,7 +58,7 @@ const bookingFormSchema = z.object({
   partnerId: z.string().optional(),
   operatorId: z.string().optional(),
   cost: z.coerce.number().min(0, "Cost must be a positive number."),
-  paymentType: z.enum(["driver", "mb", "account"]),
+  paymentType: z.enum(["driver", "account"]),
   notes: z.string().optional(),
   bookingType: z.enum(["rightNow", "inAdvance"]),
 });
@@ -492,7 +492,6 @@ export default function NewBookingPage() {
                                 defaultValue="driver"
                             >
                                 <ToggleGroupItem value="driver">Driver</ToggleGroupItem>
-                                <ToggleGroupItem value="mb">MB</ToggleGroupItem>
                                 <ToggleGroupItem value="account">Account</ToggleGroupItem>
                             </ToggleGroup>
                         </FormControl>

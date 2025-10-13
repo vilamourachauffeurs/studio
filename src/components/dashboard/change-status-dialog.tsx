@@ -22,8 +22,9 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import type { Booking, BookingStatus } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { updateBookingStatus } from "@/lib/actions";
 import { useRouter } from "next/navigation";
+import { useFirestore } from "@/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 
 const ALL_STATUSES: BookingStatus[] = [
     "draft",
@@ -52,25 +53,30 @@ export function ChangeStatusDialog({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const firestore = useFirestore();
 
 
   const handleUpdate = async () => {
     setIsLoading(true);
-    const result = await updateBookingStatus(booking.id, selectedStatus);
-    setIsLoading(false);
-    if (result.success) {
+    try {
+      const bookingRef = doc(firestore, "bookings", booking.id);
+      await updateDoc(bookingRef, { status: selectedStatus });
+      
       toast({
         title: "Status Updated",
         description: `Booking status changed to ${selectedStatus.replace("_", " ")}.`,
       });
       onOpenChange(false);
       router.refresh();
-    } else {
+    } catch (error: any) {
+      console.error("Error updating booking status:", error);
       toast({
         title: "Error",
-        description: result.error,
+        description: error?.message || "Failed to update booking status.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 

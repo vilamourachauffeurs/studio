@@ -29,10 +29,12 @@ service cloud.firestore {
 
     /**
      * @description Restricts access to user profiles. Only the user can read their own profile, and only they can create it.
+     * Admins can list and read all users.
      * @path /users/{userId}
-     * @allow (get, create, list) if isSignedIn() && isOwner(userId)
-     * @deny (update, delete) always
-     * @principle Enforces document ownership for user profiles.
+     * @allow (get, create) if isSignedIn() && isOwner(userId)
+     * @allow (list, get) if isSignedIn() && isAdmin()
+     * @deny (delete) always
+     * @principle Enforces document ownership for user profiles, with admin override.
      */
     match /users/{userId} {
       function isOwner(userId) {
@@ -41,10 +43,13 @@ service cloud.firestore {
       function isSignedIn() {
         return request.auth != null;
       }
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
+      function isAdmin() {
+        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      }
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && isAdmin();
       allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin()) && resource.data.id == userId;
       allow delete: if false;
     }
 

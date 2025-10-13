@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, orderBy, limit, doc } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, doc, Timestamp } from "firebase/firestore";
 import type { Booking } from "@/lib/types";
 
 export default function OperatorView() {
@@ -25,25 +25,45 @@ export default function OperatorView() {
 
   const operatorBookingsQuery = useMemoFirebase(() => {
     if (!relatedId) return null;
-    return query(bookingsCollectionRef, where('operatorId', '==', relatedId));
+    return query(
+      bookingsCollectionRef, 
+      where('operatorId', '==', relatedId),
+      orderBy('pickupTime', 'asc')
+    );
   }, [bookingsCollectionRef, relatedId]);
 
   const { data: operatorBookings } = useCollection<Booking>(operatorBookingsQuery);
 
-  const recentBookingsQuery = useMemoFirebase(() => {
+  // Get current time to filter out past bookings
+  const now = new Date();
+
+  const upcomingBookingsQuery = useMemoFirebase(() => {
     if (!relatedId) return null;
     
     return query(
         bookingsCollectionRef,
         where('operatorId', '==', relatedId),
-        orderBy('pickupTime', 'desc'),
+        orderBy('pickupTime', 'asc'),
         limit(5)
     );
   }, [bookingsCollectionRef, relatedId]);
 
-  const { data: recentBookings } = useCollection<Booking>(recentBookingsQuery);
+  const { data: upcomingBookings } = useCollection<Booking>(upcomingBookingsQuery);
 
-  const pendingBookings = operatorBookings?.filter(b => b.status === 'pending_admin') || [];
+  // Filter to only show upcoming bookings (not past ones)
+  const filteredUpcomingBookings = upcomingBookings?.filter(b => {
+    const pickupTime = b.pickupTime instanceof Timestamp 
+      ? b.pickupTime.toDate() 
+      : new Date(b.pickupTime);
+    return pickupTime >= now;
+  }) || [];
+
+  const pendingBookings = operatorBookings?.filter(b => {
+    const pickupTime = b.pickupTime instanceof Timestamp 
+      ? b.pickupTime.toDate() 
+      : new Date(b.pickupTime);
+    return pickupTime >= now && b.status === 'pending_admin';
+  }) || [];
 
   if (!relatedId) {
     return (
@@ -66,9 +86,9 @@ export default function OperatorView() {
     );
   }
 
-  const tableRows = (recentBookings && recentBookings.length > 0)
-    ? recentBookings
-    : (operatorBookings?.slice(0, 5) || []);
+  const tableRows = filteredUpcomingBookings.length > 0
+    ? filteredUpcomingBookings
+    : [];
 
   return (
     <div className="space-y-6">
@@ -99,7 +119,7 @@ export default function OperatorView() {
         <CardHeader>
         <div className="flex justify-between items-center">
             <div>
-                <CardTitle className="font-headline">Your Recent Bookings</CardTitle>
+                <CardTitle className="font-headline">Upcoming Bookings</CardTitle>
                 <CardDescription>
                     {pendingBookings.length} of your bookings are pending approval.
                 </CardDescription>
