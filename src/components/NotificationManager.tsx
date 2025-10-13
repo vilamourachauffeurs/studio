@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 // This is the public VAPID key for web push notifications.
 // It's safe to be public.
 const VAPID_KEY =
-  'YOUR_VAPID_KEY_HERE'; // In a real app, this would be generated in the Firebase Console
+  'KgHMlqm26E2pDh7oZ-9FD34r1z_NTlCqUJ5dtzoralU'; 
 
 export default function NotificationManager() {
   const { firebaseApp, firestore } = useFirebase();
