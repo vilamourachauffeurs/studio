@@ -1,3 +1,4 @@
+
 // This file is machine-generated - do not edit!
 
 'use server';
@@ -15,6 +16,7 @@ import {z} from 'genkit';
 import { sendNotification } from './handle-notification-flow';
 
 const SuggestDriverForBookingInputSchema = z.object({
+  bookingId: z.string().describe('The ID of the booking.'),
   pickupLocation: z.string().describe('The pickup location of the booking.'),
   dropoffLocation: z.string().describe('The dropoff location of the booking.'),
   pickupTime: z.string().describe('The pickup time of the booking (ISO format).'),
@@ -107,6 +109,7 @@ const suggestDriverForBookingFlow = ai.defineFlow(
       await sendNotification({
         type: 'job_assigned',
         recipientId: output.driverId,
+        bookingId: input.bookingId,
         message: `You have been assigned a new job from ${input.pickupLocation} to ${input.dropoffLocation}.`,
       });
     }
@@ -114,3 +117,4 @@ const suggestDriverForBookingFlow = ai.defineFlow(
     return output!;
   }
 );
+

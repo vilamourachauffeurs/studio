@@ -63,6 +63,7 @@ export function AssignDriverDialog({
     setIsLoading(true);
     setSuggestion(null);
     const result = await getDriverSuggestion({
+      bookingId: booking.id,
       pickupLocation: booking.pickupLocation,
       dropoffLocation: booking.dropoffLocation,
       pickupTime: typeof booking.pickupTime === 'string' ? booking.pickupTime : booking.pickupTime.toISOString(),
@@ -221,5 +222,3 @@ export function AssignDriverDialog({
     </Dialog>
   );
 }
-
-    
