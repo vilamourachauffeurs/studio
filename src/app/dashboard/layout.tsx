@@ -8,6 +8,7 @@ import { doc } from "firebase/firestore";
 import DashboardSidebar from "@/components/dashboard/sidebar";
 import DashboardHeader from "@/components/dashboard/header";
 import { Skeleton } from "@/components/ui/skeleton";
+import NotificationManager from "@/components/NotificationManager";
 
 export default function DashboardLayout({
   children,
@@ -95,6 +96,7 @@ export default function DashboardLayout({
       <div className="flex flex-1 flex-col">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <NotificationManager />
           {children}
         </main>
       </div>

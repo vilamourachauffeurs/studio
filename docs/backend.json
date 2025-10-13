@@ -32,6 +32,13 @@
         "relatedId": {
           "type": "string",
           "description": "References the ID of the specific entity related to the user's role (e.g., Partner.id, Driver.id, Operator.id)."
+        },
+        "fcmTokens": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "An array of Firebase Cloud Messaging tokens for sending push notifications."
         }
       },
       "required": [
@@ -437,5 +444,3 @@
     }
   }
 }
-
-    
