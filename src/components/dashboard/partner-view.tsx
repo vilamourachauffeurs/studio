@@ -65,6 +65,28 @@ export default function PartnerView() {
 
   const pendingBookings = partnerBookings?.filter(b => b.status === 'pending_admin') || [];
 
+  if (!relatedId || !userRole) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle className="font-headline">Account setup required</CardTitle>
+            <CardDescription>
+              Your user is not linked to a {userRole === 'operator' ? 'operator' : 'partner'} record yet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Please ask an admin to set the <code>relatedId</code> on your user profile to the corresponding entry in
+              <code>{userRole === 'operator' ? 'operators/{operatorId}' : 'partners/{partnerId}'}</code>. Once linked, your
+              bookings and stats will appear here.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
         <div className="flex justify-between items-start">

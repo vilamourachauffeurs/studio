@@ -36,7 +36,7 @@ export default function OperatorView() {
     return query(
         bookingsCollectionRef,
         where('operatorId', '==', relatedId),
-        orderBy('createdAt', 'desc'),
+        orderBy('pickupTime', 'desc'),
         limit(5)
     );
   }, [bookingsCollectionRef, relatedId]);
@@ -44,6 +44,31 @@ export default function OperatorView() {
   const { data: recentBookings } = useCollection<Booking>(recentBookingsQuery);
 
   const pendingBookings = operatorBookings?.filter(b => b.status === 'pending_admin') || [];
+
+  if (!relatedId) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle className="font-headline">Account setup required</CardTitle>
+            <CardDescription>
+              Your user is marked as an operator but is not linked to an operator record yet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Please ask an admin to set the <code>relatedId</code> on your user profile to the corresponding
+              entry in <code>operators/{'{operatorId}'}</code>. Once linked, your bookings and stats will appear here.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const tableRows = (recentBookings && recentBookings.length > 0)
+    ? recentBookings
+    : (operatorBookings?.slice(0, 5) || []);
 
   return (
     <div className="space-y-6">
@@ -85,7 +110,7 @@ export default function OperatorView() {
         </div>
         </CardHeader>
         <CardContent>
-          <BookingsTable bookings={recentBookings || []} />
+          <BookingsTable bookings={tableRows} />
         </CardContent>
       </Card>
     </div>

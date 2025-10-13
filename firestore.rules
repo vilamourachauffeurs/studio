@@ -52,8 +52,8 @@ service cloud.firestore {
      * @description Allows public read access to bookings, but restricts creation to authenticated users.
      * @path /bookings/{bookingId}
      * @allow (get, list) if true
-     * @allow (create) if isSignedIn()
-     * @deny (update, delete) always
+     * @allow (create, update) if isSignedIn()
+     * @deny (delete) always
      * @principle Allows public read with authenticated user-only writes.
      */
     match /bookings/{bookingId} {
@@ -63,7 +63,7 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn();
-      allow update: if false;
+      allow update: if isSignedIn();
       allow delete: if false;
     }
 
@@ -71,8 +71,8 @@ service cloud.firestore {
      * @description Allows public read access to drivers, but restricts creation to authenticated users.
      * @path /drivers/{driverId}
      * @allow (get, list) if true
-     * @allow (create) if isSignedIn()
-     * @deny (update, delete) always
+     * @allow (create, update) if isSignedIn()
+     * @deny (delete) always
      * @principle Allows public read with authenticated user-only writes.
      */
     match /drivers/{driverId} {
@@ -82,7 +82,7 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn();
-      allow update: if false;
+      allow update: if isSignedIn();
       allow delete: if false;
     }
 
@@ -90,8 +90,8 @@ service cloud.firestore {
      * @description Allows public read access to clients, but restricts creation to authenticated users.
      * @path /clients/{clientId}
      * @allow (get, list) if true
-     * @allow (create) if isSignedIn()
-     * @deny (update, delete) always
+     * @allow (create, update) if isSignedIn()
+     * @deny (delete) always
      * @principle Allows public read with authenticated user-only writes.
      */
     match /clients/{clientId} {
@@ -101,7 +101,7 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn();
-      allow update: if false;
+      allow update: if isSignedIn();
       allow delete: if false;
     }
 
@@ -109,8 +109,8 @@ service cloud.firestore {
      * @description Allows public read access to partners, but restricts creation to authenticated users.
      * @path /partners/{partnerId}
      * @allow (get, list) if true
-     * @allow (create) if isSignedIn()
-     * @deny (update, delete) always
+     * @allow (create, update) if isSignedIn()
+     * @deny (delete) always
      * @principle Allows public read with authenticated user-only writes.
      */
     match /partners/{partnerId} {
@@ -120,7 +120,7 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn();
-      allow update: if false;
+      allow update: if isSignedIn();
       allow delete: if false;
     }
 
@@ -128,8 +128,8 @@ service cloud.firestore {
      * @description Allows public read access to operators, but restricts creation to authenticated users.
      * @path /operators/{operatorId}
      * @allow (get, list) if true
-     * @allow (create) if isSignedIn()
-     * @deny (update, delete) always
+     * @allow (create, update) if isSignedIn()
+     * @deny (delete) always
      * @principle Allows public read with authenticated user-only writes.
      */
     match /operators/{operatorId} {
@@ -139,7 +139,7 @@ service cloud.firestore {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn();
-      allow update: if false;
+      allow update: if isSignedIn();
       allow delete: if false;
     }
   }

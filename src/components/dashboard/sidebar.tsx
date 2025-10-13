@@ -28,15 +28,15 @@ import {
 } from "@/components/ui/sheet";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "partner", "driver"] },
-  { href: "/dashboard/bookings", label: "Bookings", icon: Book, roles: ["admin", "partner", "driver"] },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "partner", "driver", "operator"] },
+  { href: "/dashboard/bookings", label: "Bookings", icon: Book, roles: ["admin", "partner", "driver", "operator"] },
   { href: "/dashboard/drivers", label: "Drivers", icon: Car, roles: ["admin"] },
   { href: "/dashboard/partners", label: "Partners", icon: Briefcase, roles: ["admin"] },
   { href: "/dashboard/operators", label: "Operators", icon: Hotel, roles: ["admin"] },
   { href: "/dashboard/clients", label: "Clients", icon: Users, roles: ["admin"] },
   { href: "/dashboard/users", label: "Users", icon: Users, roles: ["admin"] },
   { href: "/dashboard/reports", label: "Reports", icon: FileText, roles: ["admin"] },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin", "partner", "driver"] },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin", "partner", "driver", "operator"] },
 ];
 
 function NavLink({
