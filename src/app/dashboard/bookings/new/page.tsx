@@ -105,6 +105,11 @@ export default function NewBookingPage() {
 
   const pax = form.watch("pax");
   const bookingType = form.watch("bookingType");
+  // @ts-ignore
+  const userRole = userProfile?.role;
+  // @ts-ignore
+  const relatedId = userProfile?.relatedId as string | undefined;
+  const isOperatorUser = userRole === 'operator' && !!relatedId;
 
   useEffect(() => {
     if (pax > 4) {
@@ -120,6 +125,14 @@ export default function NewBookingPage() {
         }
     }, [bookingType, form]);
 
+  // Auto-assign operatorId for operator users and lock selection
+  useEffect(() => {
+    if (isOperatorUser && relatedId) {
+      form.setValue('operatorId', relatedId);
+      form.setValue('partnerId', undefined);
+    }
+  }, [isOperatorUser, relatedId, form]);
+
   async function onSubmit(data: BookingFormValues) {
     if (!user || !userProfile) {
         toast({
@@ -132,13 +145,15 @@ export default function NewBookingPage() {
 
     // @ts-ignore
     const isAdmin = userProfile.role === 'admin';
+    const isOperator = userProfile.role === 'operator' && !!relatedId;
     const bookingStatus = isAdmin ? 'approved' : 'pending_admin';
     
     try {
         const bookingData = {
           ...data,
-          partnerId: data.partnerId || null,
-          operatorId: data.operatorId || null,
+          // Enforce operator linkage for operator users
+          operatorId: isOperator ? relatedId : (data.operatorId || null),
+          partnerId: isOperator ? null : (data.partnerId || null),
           status: bookingStatus,
           createdById: user.uid,
           createdAt: serverTimestamp(),
@@ -399,33 +414,49 @@ export default function NewBookingPage() {
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Operator / Partner (Optional)</FormLabel>
-                        <div className="relative">
+                        {isOperatorUser ? (
+                          <div className="relative">
+                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+                            <Input
+                              readOnly
+                              className="pl-10"
+                              value={
+                                operators?.find(o => o.id === relatedId)?.name || 'Assigned operator'
+                              }
+                            />
+                            <FormDescription>
+                              Operator is locked to your assigned operator.
+                            </FormDescription>
+                          </div>
+                        ) : (
+                          <div className="relative">
                             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
                             <Select onValueChange={handleEntitySelect} value={form.getValues().operatorId ? `operator_${form.getValues().operatorId}` : form.getValues().partnerId ? `partner_${form.getValues().partnerId}` : undefined}>
-                                <FormControl>
+                              <FormControl>
                                 <SelectTrigger className="pl-10">
-                                    <SelectValue placeholder="Select an operator or partner" />
+                                  <SelectValue placeholder="Select an operator or partner" />
                                 </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {operators && operators.length > 0 && (
-                                        <SelectGroup>
-                                            <SelectLabel>Operators</SelectLabel>
-                                            {operators.map(o => <SelectItem key={o.id} value={`operator_${o.id}`}>{o.name}</SelectItem>)}
-                                        </SelectGroup>
-                                    )}
-                                    {partners && partners.length > 0 && (
-                                        <SelectGroup>
-                                            <SelectLabel>Partners</SelectLabel>
-                                            {partners.map(p => <SelectItem key={p.id} value={`partner_${p.id}`}>{p.name}</SelectItem>)}
-                                        </SelectGroup>
-                                    )}
-                                </SelectContent>
+                              </FormControl>
+                              <SelectContent>
+                                {operators && operators.length > 0 && (
+                                  <SelectGroup>
+                                    <SelectLabel>Operators</SelectLabel>
+                                    {operators.map(o => <SelectItem key={o.id} value={`operator_${o.id}`}>{o.name}</SelectItem>)}
+                                  </SelectGroup>
+                                )}
+                                {partners && partners.length > 0 && (
+                                  <SelectGroup>
+                                    <SelectLabel>Partners</SelectLabel>
+                                    {partners.map(p => <SelectItem key={p.id} value={`partner_${p.id}`}>{p.name}</SelectItem>)}
+                                  </SelectGroup>
+                                )}
+                              </SelectContent>
                             </Select>
-                        </div>
-                        <FormDescription>
-                            If this booking is on behalf of an operator or partner company.
-                        </FormDescription>
+                            <FormDescription>
+                              If this booking is on behalf of an operator or partner company.
+                            </FormDescription>
+                          </div>
+                        )}
                         <FormMessage />
                         </FormItem>
                     )}
