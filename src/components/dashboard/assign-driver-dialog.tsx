@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2, Rocket } from "lucide-react";
-import type { Booking, Driver, Partner, Operator } from "@/lib/types";
+import type { Booking, Driver } from "@/lib/types";
 import { getDriverSuggestion } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +40,7 @@ export function AssignDriverDialog({
   open,
   onOpenChange,
 }: AssignDriverDialogProps) {
-  const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [suggestion, setSuggestion] = useState<{
     driverId: string;
@@ -52,12 +52,11 @@ export function AssignDriverDialog({
   const driversCollectionRef = useMemoFirebase(() => collection(firestore, 'drivers'), [firestore]);
   const { data: drivers, isLoading: driversLoading } = useCollection<Driver>(driversCollectionRef);
 
-  const partnersCollectionRef = useMemoFirebase(() => collection(firestore, 'partners'), [firestore]);
-  const { data: partners, isLoading: partnersLoading } = useCollection<Partner>(partnersCollectionRef);
-  
-  const operatorsCollectionRef = useMemoFirebase(() => collection(firestore, 'operators'), [firestore]);
-  const { data: operators, isLoading: operatorsLoading } = useCollection<Operator>(operatorsCollectionRef);
-
+  useEffect(() => {
+    if (booking.driverId) {
+      setSelectedDriverId(booking.driverId);
+    }
+  }, [booking]);
 
   const handleSuggestion = async () => {
     setIsLoading(true);
@@ -73,7 +72,7 @@ export function AssignDriverDialog({
 
     if (result.success) {
       setSuggestion(result.data);
-      setSelectedEntity(`driver_${result.data.driverId}`);
+      setSelectedDriverId(result.data.driverId);
     } else {
       toast({
         title: "Error",
@@ -84,53 +83,38 @@ export function AssignDriverDialog({
   };
 
   const handleAssign = async () => {
-    if (!selectedEntity) {
+    if (!selectedDriverId) {
         toast({
-            title: "No selection made",
-            description: "Please select a driver, operator, or partner to assign.",
+            title: "No driver selected",
+            description: "Please select a driver to assign to the booking.",
             variant: "destructive",
         });
         return;
     }
     
-    const [type, id] = selectedEntity.split('_');
     const bookingRef = doc(firestore, 'bookings', booking.id);
-    let entityName = "Unknown";
-    let updateData: any = { status: 'assigned' };
+    const driver = drivers?.find(d => d.id === selectedDriverId);
+    const driverName = driver?.name || 'The selected driver';
 
     try {
-        if (type === 'driver') {
-            const driver = drivers?.find(d => d.id === id);
-            entityName = driver?.name || 'Driver';
-            updateData.driverId = id;
-            updateData.partnerId = null;
-            updateData.operatorId = null;
-        } else if (type === 'partner') {
-            const partner = partners?.find(p => p.id === id);
-            entityName = partner?.name || 'Partner';
-            updateData.partnerId = id;
-            updateData.driverId = null;
-            updateData.operatorId = null;
-        } else if (type === 'operator') {
-            const operator = operators?.find(o => o.id === id);
-            entityName = operator?.name || 'Operator';
-            updateData.operatorId = id;
-            updateData.driverId = null;
-            updateData.partnerId = null;
-        }
-
-        await updateDoc(bookingRef, updateData);
+        await updateDoc(bookingRef, {
+            driverId: selectedDriverId,
+            status: 'assigned',
+            // Clear out other assignments
+            partnerId: null, 
+            operatorId: null
+        });
         
         toast({
-            title: `${type.charAt(0).toUpperCase() + type.slice(1)} Assigned!`,
-            description: `${entityName} has been assigned to booking #${booking.id.substring(0,7)}.`
+            title: "Driver Assigned!",
+            description: `${driverName} has been assigned to booking #${booking.id.substring(0,7)}.`
         });
         onOpenChange(false);
     } catch (error) {
-        console.error("Error assigning entity:", error);
+        console.error("Error assigning driver:", error);
         toast({
             title: "Error",
-            description: "There was a problem assigning the entity.",
+            description: "There was a problem assigning the driver.",
             variant: "destructive"
         })
     }
@@ -140,54 +124,36 @@ export function AssignDriverDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-headline">Assign to Booking</DialogTitle>
+          <DialogTitle className="font-headline">Assign Driver to Booking</DialogTitle>
           <DialogDescription>
-            Assign a driver or partner to booking #{booking.id.substring(0,7)}. Use our AI to get a
+            Assign a driver to booking #{booking.id.substring(0,7)}. Use our AI to get a
             driver suggestion.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="entity">Select Driver, Operator, or Partner</Label>
+            <Label htmlFor="driver">Select Driver</Label>
             <Select
-              onValueChange={setSelectedEntity}
-              value={selectedEntity || undefined}
+              onValueChange={setSelectedDriverId}
+              value={selectedDriverId || undefined}
             >
-              <SelectTrigger id="entity">
-                <SelectValue placeholder="Select an entity to assign" />
+              <SelectTrigger id="driver">
+                <SelectValue placeholder="Select a driver to assign" />
               </SelectTrigger>
               <SelectContent>
-                {driversLoading || partnersLoading || operatorsLoading ? (
+                {driversLoading ? (
                     <div className="flex items-center justify-center p-4">
                         <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
                 ) : (
-                    <>
-                        <SelectGroup>
-                            <SelectLabel>Drivers</SelectLabel>
-                            {drivers?.map((driver) => (
-                            <SelectItem key={driver.id} value={`driver_${driver.id}`}>
-                                {driver.name} - ({driver.status})
-                            </SelectItem>
-                            ))}
-                        </SelectGroup>
-                        <SelectGroup>
-                            <SelectLabel>Operators</SelectLabel>
-                            {operators?.map((operator) => (
-                            <SelectItem key={operator.id} value={`operator_${operator.id}`}>
-                                {operator.name}
-                            </SelectItem>
-                            ))}
-                        </SelectGroup>
-                        <SelectGroup>
-                            <SelectLabel>Partners</SelectLabel>
-                            {partners?.map((partner) => (
-                            <SelectItem key={partner.id} value={`partner_${partner.id}`}>
-                                {partner.name}
-                            </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </>
+                    <SelectGroup>
+                        <SelectLabel>Drivers</SelectLabel>
+                        {drivers?.map((driver) => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                            {driver.name} - ({driver.status})
+                        </SelectItem>
+                        ))}
+                    </SelectGroup>
                 )}
               </SelectContent>
             </Select>
