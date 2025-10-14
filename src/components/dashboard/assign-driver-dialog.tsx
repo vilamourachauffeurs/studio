@@ -28,6 +28,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, doc, updateDoc } from "firebase/firestore";
+import { sendNotification } from "@/ai/flows/handle-notification-flow";
 
 type AssignDriverDialogProps = {
   booking: Booking;
@@ -104,10 +105,18 @@ export function AssignDriverDialog({
             partnerId: null, 
             operatorId: null
         });
+
+        // Send notification to the assigned driver
+        await sendNotification({
+          type: 'job_assigned',
+          recipientId: selectedDriverId, // The ID of the driver's user document
+          bookingId: booking.id,
+          message: `You have been assigned a new job from ${booking.pickupLocation} to ${booking.dropoffLocation}.`,
+        });
         
         toast({
             title: "Driver Assigned!",
-            description: `${driverName} has been assigned to booking #${booking.id.substring(0,7)}.`
+            description: `${driverName} has been assigned to booking #${booking.id.substring(0,7)} and notified.`
         });
         onOpenChange(false);
     } catch (error) {
