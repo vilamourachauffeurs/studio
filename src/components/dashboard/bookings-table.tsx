@@ -219,6 +219,7 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
   
   // Operators cannot change status
   const canChangeStatus = userRole !== 'operator';
+  const canAssignDriver = userRole === 'admin' && ['approved', 'assigned', 'confirmed', 'in_progress'].includes(booking.status);
 
   return (
     <>
@@ -264,10 +265,10 @@ function BookingTableRow({ booking, isEvenDay }: { booking: Booking; isEvenDay: 
         </TableCell>
         <TableCell onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2">
-            {booking.status === 'approved' && userRole === 'admin' && (
+            {canAssignDriver && (
               <Button size="sm" variant="outline" onClick={() => setIsAssignDriverOpen(true)}>
                 <Car className="mr-2 h-4 w-4" />
-                Assign
+                {booking.driverId ? "Re-assign" : "Assign"}
               </Button>
             )}
             <BookingActions booking={booking} />
@@ -491,5 +492,4 @@ export default function BookingsTable({
     </div>
   );
 }
-
 

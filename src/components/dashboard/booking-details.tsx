@@ -111,9 +111,9 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
     const { data: userProfile } = useDoc(userDocRef);
     const userRole = userProfile ? (userProfile as any).role : null;
 
-    // Operators cannot change status or assign drivers
+    // Operators cannot change status
     const canChangeStatus = userRole !== 'operator';
-    const canAssignDriver = userRole === 'admin';
+    const canAssignDriver = userRole === 'admin' && ['approved', 'assigned', 'confirmed', 'in_progress'].includes(booking.status);
 
     const handleCancelBooking = async () => {
         setIsCancelling(true);
@@ -195,7 +195,8 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
                 </Button>
                 {canAssignDriver && (
                     <Button onClick={() => setIsAssignDriverOpen(true)}>
-                        <Car className="mr-2"/> Assign Driver
+                        <Car className="mr-2"/> 
+                        {booking.driverId ? "Re-assign Driver" : "Assign Driver"}
                     </Button>
                 )}
                 <Button variant="destructive" onClick={() => setIsCancelAlertOpen(true)}>
@@ -242,3 +243,4 @@ export default function BookingDetails({ booking }: { booking: Booking }) {
     </div>
   );
 }
+
