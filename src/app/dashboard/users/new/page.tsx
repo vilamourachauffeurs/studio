@@ -30,10 +30,11 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { firebaseConfig } from "@/firebase/config";
 import { useRouter } from "next/navigation";
 import type { Partner, Operator, Driver } from "@/lib/types";
+import type { SecurityRuleContext } from "@/firebase/errors";
 
 const userFormSchema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -80,34 +81,47 @@ export default function NewUserPage() {
     const tempAuth = getAuth(tempApp);
 
     try {
-        // Create user in Firebase Auth using the temporary instance
         const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
         const user = userCredential.user;
 
-        // Create user document in Firestore
-        await setDoc(doc(firestore, "users", user.uid), {
+        const newUserDoc = {
             id: user.uid,
             name: data.name,
             email: data.email,
             phone: data.phone,
             role: data.role,
             relatedId: data.relatedId || null,
-        });
+        };
         
-        toast({
-            title: "User Created!",
-            description: `${data.name} has been added to the system as a ${data.role}.`,
-        });
-        router.push("/dashboard/users");
+        const userDocRef = doc(firestore, "users", user.uid);
+
+        setDoc(userDocRef, newUserDoc)
+          .then(() => {
+            toast({
+                title: "User Created!",
+                description: `${data.name} has been added to the system as a ${data.role}.`,
+            });
+            router.push("/dashboard/users");
+          })
+          .catch((serverError) => {
+            const permissionError = new FirestorePermissionError({
+              path: userDocRef.path,
+              operation: 'create',
+              requestResourceData: newUserDoc,
+            } satisfies SecurityRuleContext);
+            
+            errorEmitter.emit('permission-error', permissionError);
+          });
+
     } catch (error: any) {
-        console.error("Error creating user:", error);
+        // This will catch errors from createUserWithEmailAndPassword
+        console.error("Error creating auth user:", error);
         toast({
-            title: "Error",
-            description: error.message || "There was a problem creating the user.",
+            title: "Authentication Error",
+            description: error.message || "There was a problem creating the user's authentication account.",
             variant: "destructive"
         })
     } finally {
-        // Clean up the temporary app instance
         await deleteApp(tempApp);
     }
   }
@@ -317,5 +331,3 @@ export default function NewUserPage() {
     </div>
   );
 }
-
-    
