@@ -1,34 +1,37 @@
-// This file is required to handle web push notifications in the background.
-// It must be in the public directory.
+
+// This file must be in the public folder.
 
 // Scripts for firebase and firebase messaging
-importScripts("https://www.gstatic.com/firebasejs/9.2.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/9.2.0/firebase-messaging-compat.js");
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  "projectId": "studio-7106436978-f5ba3",
+  "appId": "1:680211956159:web:6ea06cc2d621a5b68d610a",
+  "apiKey": "AIzaSyDhP0rNyGi2dODgIXwZFtC3QzIxPFs69ps",
+  "authDomain": "studio-7106436978-f5ba3.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "680211956159"
+};
 
 
-// Initialize the Firebase app in the service worker
-// Be sure to replace the config values with your own
-firebase.initializeApp({
-  apiKey: "AIzaSyDhP0rNyGi2dODgIXwZFtC3QzIxPFs69ps",
-  authDomain: "studio-7106436978-f5ba3.firebaseapp.com",
-  projectId: "studio-7106436978-f5ba3",
-  storageBucket: "studio-7106436978-f5ba3.appspot.com",
-  messagingSenderId: "680211956159",
-  appId: "1:680211956159:web:6ea06cc2d621a5b68d610a"
-});
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
-
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
 const messaging = firebase.messaging();
 
+// Optional: To handle background notifications
 messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Received background message ', payload);
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-        body: payload.notification.body,
-    };
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  // Customize notification here
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/firebase-logo.png'
+  };
 
-    self.registration.showNotification(notificationTitle,
-        notificationOptions);
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
