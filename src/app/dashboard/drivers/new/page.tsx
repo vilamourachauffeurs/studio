@@ -29,8 +29,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore } from "@/firebase";
+import { useFirestore, errorEmitter, FirestorePermissionError } from "@/firebase";
 import { useRouter } from "next/navigation";
+import type { SecurityRuleContext } from "@/firebase/errors";
 
 const driverFormSchema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -75,27 +76,31 @@ export default function NewDriverPage() {
 
 
   async function onSubmit(data: DriverFormValues) {
-    try {
-        const docRef = await addDoc(collection(firestore, "drivers"), {
-            ...data,
-            status: "offline", // Default status
-            avatarUrl: `https://picsum.photos/seed/${data.name.replace(/\s/g, '')}/100/100`, // Placeholder avatar
-            createdAt: serverTimestamp(),
-        });
-        
+    const driversCollectionRef = collection(firestore, "drivers");
+    const newDriverData = {
+        ...data,
+        status: "offline", // Default status
+        avatarUrl: `https://picsum.photos/seed/${data.name.replace(/\s/g, '')}/100/100`, // Placeholder avatar
+        createdAt: serverTimestamp(),
+    };
+
+    addDoc(driversCollectionRef, newDriverData)
+      .then((docRef) => {
         toast({
-            title: "Driver Created!",
-            description: `${data.name} has been added to the system.`,
+          title: "Driver Created!",
+          description: `${data.name} has been added to the system.`,
         });
         router.push("/dashboard/drivers");
-    } catch (error) {
-        console.error("Error creating driver:", error);
-        toast({
-            title: "Error",
-            description: "There was a problem creating the driver.",
-            variant: "destructive"
-        })
-    }
+      })
+      .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+          path: driversCollectionRef.path,
+          operation: 'create',
+          requestResourceData: newDriverData,
+        } satisfies SecurityRuleContext);
+        
+        errorEmitter.emit('permission-error', permissionError);
+      });
   }
 
   return (
