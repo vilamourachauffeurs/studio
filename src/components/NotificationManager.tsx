@@ -7,10 +7,11 @@ import { useFirebase, useUser } from '@/firebase';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
-// This is the public VAPID key for web push notifications.
+// This is the public VAPID key 
+// for web push notifications.
 // It's safe to be public.
 const VAPID_KEY =
-  'KgHMlqm26E2pDh7oZ-9FD34r1z_NTlCqUJ5dtzoralU'; 
+  'BDTphv81HsvF-dsWroKyK4iSoHROwgYfnB0YTxNgPpL1bo8JsUQsGZ6o4Yyy9D0x5rs_Y538rSAlKgR-Q1WAWnY'; 
 
 export default function NotificationManager() {
   const { firebaseApp, firestore } = useFirebase();

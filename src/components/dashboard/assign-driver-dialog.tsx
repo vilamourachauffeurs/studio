@@ -27,7 +27,7 @@ import { getDriverSuggestion } from "@/lib/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, updateDoc } from "firebase/firestore";
+import { collection, doc, updateDoc, query, where, getDocs } from "firebase/firestore";
 import { sendNotification } from "@/ai/flows/handle-notification-flow";
 
 type AssignDriverDialogProps = {
@@ -106,17 +106,34 @@ export function AssignDriverDialog({
             operatorId: null
         });
 
-        // Send notification to the assigned driver
-        await sendNotification({
-          type: 'job_assigned',
-          recipientId: selectedDriverId, // The ID of the driver's user document
-          bookingId: booking.id,
-          message: `You have been assigned a new job from ${booking.pickupLocation} to ${booking.dropoffLocation}.`,
-        });
+        // Find the user ID for this driver (user has relatedId = driverId)
+        const usersRef = collection(firestore, 'users');
+        const userQuery = query(usersRef, where('relatedId', '==', selectedDriverId), where('role', '==', 'driver'));
+        const userSnapshot = await getDocs(userQuery);
+        
+        console.log(`Looking for user with relatedId=${selectedDriverId} and role=driver`);
+        console.log(`Found ${userSnapshot.size} matching users`);
+        
+        if (!userSnapshot.empty) {
+          const driverUserId = userSnapshot.docs[0].id;
+          console.log(`Found driver user ID: ${driverUserId}`);
+          
+          // Send notification to the assigned driver (non-blocking)
+          sendNotification({
+            type: 'job_assigned',
+            recipientId: driverUserId, // The user document ID
+            bookingId: booking.id,
+            message: `You have been assigned a new job from ${booking.pickupLocation} to ${booking.dropoffLocation}.`,
+          }).catch((notificationError) => {
+            console.warn("Failed to send notification, but driver was assigned:", notificationError);
+          });
+        } else {
+          console.warn(`No user account found for driver ${selectedDriverId}. Make sure a user exists with relatedId="${selectedDriverId}" and role="driver"`);
+        }
         
         toast({
             title: "Driver Assigned!",
-            description: `${driverName} has been assigned to booking #${booking.id.substring(0,7)} and notified.`
+            description: `${driverName} has been assigned to booking #${booking.id.substring(0,7)}.`
         });
         onOpenChange(false);
     } catch (error) {
