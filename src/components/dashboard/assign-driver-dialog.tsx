@@ -43,6 +43,7 @@ export function AssignDriverDialog({
 }: AssignDriverDialogProps) {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
   const [suggestion, setSuggestion] = useState<{
     driverId: string;
     reason: string;
@@ -56,6 +57,8 @@ export function AssignDriverDialog({
   useEffect(() => {
     if (booking.driverId) {
       setSelectedDriverId(booking.driverId);
+    } else {
+      setSelectedDriverId(null);
     }
   }, [booking]);
 
@@ -93,56 +96,56 @@ export function AssignDriverDialog({
         return;
     }
     
+    setIsAssigning(true);
     const bookingRef = doc(firestore, 'bookings', booking.id);
     const driver = drivers?.find(d => d.id === selectedDriverId);
     const driverName = driver?.name || 'The selected driver';
 
     try {
+        // Step 1: Update the booking document
         await updateDoc(bookingRef, {
             driverId: selectedDriverId,
             status: 'assigned',
-            // Clear out other assignments
-            partnerId: null, 
-            operatorId: null
         });
 
-        // Find the user ID for this driver (user has relatedId = driverId)
+        // Step 2: Find the user ID for this driver (user has relatedId = driverId)
         const usersRef = collection(firestore, 'users');
         const userQuery = query(usersRef, where('relatedId', '==', selectedDriverId), where('role', '==', 'driver'));
         const userSnapshot = await getDocs(userQuery);
         
-        console.log(`Looking for user with relatedId=${selectedDriverId} and role=driver`);
-        console.log(`Found ${userSnapshot.size} matching users`);
-        
+        let driverUserId: string | null = null;
         if (!userSnapshot.empty) {
-          const driverUserId = userSnapshot.docs[0].id;
-          console.log(`Found driver user ID: ${driverUserId}`);
-          
-          // Send notification to the assigned driver (non-blocking)
-          sendNotification({
+          driverUserId = userSnapshot.docs[0].id;
+        } else {
+          console.warn(`No user account found for driver ${selectedDriverId}. Cannot send notification.`);
+        }
+        
+        // Step 3: If a user was found, send the notification
+        if (driverUserId) {
+          console.log(`Found driver user ID: ${driverUserId}. Sending notification...`);
+          await sendNotification({
             type: 'job_assigned',
-            recipientId: driverUserId, // The user document ID
+            recipientId: driverUserId,
             bookingId: booking.id,
             message: `You have been assigned a new job from ${booking.pickupLocation} to ${booking.dropoffLocation}.`,
-          }).catch((notificationError) => {
-            console.warn("Failed to send notification, but driver was assigned:", notificationError);
           });
-        } else {
-          console.warn(`No user account found for driver ${selectedDriverId}. Make sure a user exists with relatedId="${selectedDriverId}" and role="driver"`);
+           console.log("Notification flow triggered successfully.");
         }
         
         toast({
             title: "Driver Assigned!",
-            description: `${driverName} has been assigned to booking #${booking.id.substring(0,7)}.`
+            description: `${driverName} has been assigned to booking #${booking.id.substring(0,7)}.`,
         });
         onOpenChange(false);
     } catch (error) {
-        console.error("Error assigning driver:", error);
+        console.error("Error assigning driver or sending notification:", error);
         toast({
             title: "Error",
             description: "There was a problem assigning the driver.",
             variant: "destructive"
         })
+    } finally {
+        setIsAssigning(false);
     }
   };
 
@@ -198,7 +201,7 @@ export function AssignDriverDialog({
           <Button
             variant="outline"
             onClick={handleSuggestion}
-            disabled={isLoading}
+            disabled={isLoading || isAssigning}
             className="w-full sm:w-auto"
           >
             {isLoading ? (
@@ -208,7 +211,10 @@ export function AssignDriverDialog({
             )}
             Suggest Driver
           </Button>
-          <Button onClick={handleAssign}>Assign</Button>
+          <Button onClick={handleAssign} disabled={isAssigning || !selectedDriverId}>
+            {isAssigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Assign Driver
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
