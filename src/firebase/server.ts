@@ -1,33 +1,37 @@
 
-import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { firebaseConfig } from './config';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 if (!getApps().length) {
   try {
-    // Check if environment variables are set (local development)
-    if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-      // Replace escaped newlines in private key
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-      
+    const serviceAccount = {
+      projectId: process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    };
+
+    if (serviceAccount.clientEmail && serviceAccount.privateKey) {
+      // Running in a local/dev environment with service account credentials
       initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: privateKey,
-        }),
+        credential: cert(serviceAccount),
       });
-      console.log('Firebase Admin SDK initialized with environment variables');
+      console.log('Firebase Admin SDK initialized with service account credentials.');
     } else {
-      // Production environment - credentials auto-discovered
+      // Running in a deployed environment (e.g., Firebase Hosting, Google Cloud)
+      // where credentials should be auto-discovered.
       initializeApp({
         projectId: firebaseConfig.projectId,
       });
-      console.log('Firebase Admin SDK initialized for production environment');
+      console.log('Firebase Admin SDK initialized for a production environment.');
     }
   } catch (error) {
     console.error('Firebase Admin initialization failed:', error);
-    // Initialize with minimal config as fallback
+    // As a fallback, initialize with what we have.
     initializeApp({
       projectId: firebaseConfig.projectId,
     });
