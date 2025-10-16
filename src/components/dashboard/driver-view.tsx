@@ -18,8 +18,8 @@ export default function DriverView() {
   const userDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
   const { data: userProfile } = useDoc(userDocRef);
   
-  // @ts-ignore
-  const driverId = userProfile?.relatedId;
+  // NEW ARCHITECTURE: For drivers, user.uid = driver document ID (no relatedId)
+  const driverId = user?.uid;
 
   const driverDocRef = useMemoFirebase(() => driverId ? doc(firestore, 'drivers', driverId) : null, [firestore, driverId]);
   const { data: driver } = useDoc<Driver>(driverDocRef);

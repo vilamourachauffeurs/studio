@@ -91,12 +91,32 @@ export default function NewUserPage() {
             email: data.email,
             phone: data.phone,
             role: data.role,
-            relatedId: data.relatedId || null,
+            // Only set relatedId for operators and partners (not drivers)
+            relatedId: data.role === 'driver' ? null : (data.relatedId || null),
         });
+
+        // NEW: For drivers, automatically create driver profile with matching ID
+        if (data.role === 'driver') {
+            await setDoc(doc(firestore, "drivers", user.uid), {
+                id: user.uid,
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                status: "offline",
+                avatarUrl: `https://picsum.photos/seed/${data.name.replace(/\s/g, '')}/100/100`,
+                birthday: null,
+                age: 0,
+                performance: {
+                    completedJobs: 0,
+                    onTimePercent: 100,
+                    lastMonthEarnings: 0,
+                },
+            });
+        }
         
         toast({
             title: "User Created!",
-            description: `${data.name} has been added to the system as a ${data.role}.`,
+            description: `${data.name} has been added to the system as a ${data.role}.${data.role === 'driver' ? ' Driver profile created automatically.' : ''}`,
         });
         router.push("/dashboard/users");
     } catch (error: any) {
@@ -168,30 +188,15 @@ export default function NewUserPage() {
       )
     }
     if (role === 'driver') {
+      // Drivers no longer need relatedId - driver profile is created automatically with same ID
       return (
-        <FormField
-          control={form.control}
-          name="relatedId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Related Driver</FormLabel>
-                <div className="relative">
-                    <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                        <SelectTrigger className="pl-10">
-                            <SelectValue placeholder="Select a driver profile" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {drivers?.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="md:col-span-2 p-4 bg-muted/50 rounded-lg border">
+          <p className="text-sm text-muted-foreground">
+            <Car className="inline h-4 w-4 mr-2" />
+            A driver profile will be automatically created with this user account. 
+            You can update driver-specific details (license, commission, etc.) after creation.
+          </p>
+        </div>
       )
     }
     return null;

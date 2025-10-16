@@ -34,6 +34,7 @@ if (!getApps().length) {
   }
 }
 
+const adminApp = getApps()[0] || getApp();
 const adminDb = getFirestore();
 
-export { adminDb as firestore };
+export { adminDb as firestore, adminApp };

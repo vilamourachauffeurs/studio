@@ -26,7 +26,7 @@ export type User = {
   email: string;
   photoURL: string;
   role: UserRole;
-  relatedId?: string;
+  relatedId?: string; // Only used for operators and partners (multiple users per company). Drivers: user.uid = driver.id
   phone: string;
 };
 
@@ -54,13 +54,13 @@ export type Booking = {
 };
 
 export type Driver = {
-  id: string;
+  id: string; // NEW ARCHITECTURE: Driver.id = User.id (same ID for both documents)
   name: string;
   phone: string;
   email: string;
   avatarUrl: string;
   status: "online" | "offline";
-  birthday: Timestamp | Date;
+  birthday: Timestamp | Date | null;
   age: number;
   nationalId?: string;
   driversLicense?: string;

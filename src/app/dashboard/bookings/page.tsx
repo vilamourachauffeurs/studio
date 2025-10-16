@@ -33,7 +33,7 @@ export default function BookingsPage() {
   const bookingsCollectionRef = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
   
   const bookingsQuery = useMemoFirebase(() => {
-    if (!userProfile) return null;
+    if (!userProfile || !user) return null;
 
     // @ts-ignore
     const userRole = userProfile.role;
@@ -46,8 +46,9 @@ export default function BookingsPage() {
       return query(bookingsCollectionRef, where('partnerId', '==', relatedId), orderBy('pickupTime', 'desc'));
     } else if (userRole === 'operator' && relatedId) {
       return query(bookingsCollectionRef, where('operatorId', '==', relatedId), orderBy('pickupTime', 'desc'));
-    } else if (userRole === 'driver' && relatedId) {
-      return query(bookingsCollectionRef, where('driverId', '==', relatedId), orderBy('pickupTime', 'desc'));
+    } else if (userRole === 'driver') {
+      // NEW ARCHITECTURE: For drivers, user.uid = driver document ID
+      return query(bookingsCollectionRef, where('driverId', '==', user.uid), orderBy('pickupTime', 'desc'));
     }
 
     // Fallback for users (like partners/operators without a relatedId) to see bookings they created

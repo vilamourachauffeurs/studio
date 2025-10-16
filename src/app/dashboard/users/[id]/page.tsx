@@ -94,9 +94,12 @@ export default function EditUserPage() {
 
     try {
       const userDocRef = doc(firestore, 'users', userId);
-      await updateDoc(userDocRef, {
-        ...data,
-      });
+      // For drivers, don't save relatedId (they use user.uid as driver ID)
+      const updateData = data.role === 'driver' 
+        ? { ...data, relatedId: null }
+        : { ...data };
+      
+      await updateDoc(userDocRef, updateData);
 
       toast({
         title: "User Updated!",
@@ -169,30 +172,15 @@ export default function EditUserPage() {
       )
     }
     if (role === 'driver') {
+      // Drivers no longer use relatedId - their driver profile ID matches their user ID
       return (
-        <FormField
-          control={form.control}
-          name="relatedId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Related Driver</FormLabel>
-                <div className="relative">
-                    <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                        <SelectTrigger className="pl-10">
-                            <SelectValue placeholder="Select a driver profile" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {drivers?.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="md:col-span-2 p-4 bg-muted/50 rounded-lg border">
+          <p className="text-sm text-muted-foreground">
+            <Car className="inline h-4 w-4 mr-2" />
+            Driver profile is automatically linked using the same ID as this user account.
+            Edit driver-specific details (license, commission, etc.) in the Drivers section.
+          </p>
+        </div>
       )
     }
     return null;

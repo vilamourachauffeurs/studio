@@ -1,5 +1,5 @@
 # Firebase Studio
-
+16 out
 A comprehensive transportation and booking management system built with Next.js, Firebase, and AI-powered features.
 
 ## Features
@@ -127,6 +127,18 @@ src/
 - **Operator** - Create and manage bookings for their company
 - **Partner** - Create and view bookings for their organization
 - **Driver** - View assigned jobs and update status
+
+### Data Architecture
+
+**Operators & Partners:**
+- Use `relatedId` to link multiple users to one company
+- Example: Multiple employees can manage one operator company
+
+**Drivers:**
+- User ID = Driver Document ID (simplified 1:1 relationship)
+- No `relatedId` needed - driver profile created automatically with matching ID
+- Benefits: Simpler queries, instant notifications, less data duplication
+- **Note:** If migrating from old structure, existing drivers must be recreated with matching IDs
 
 ## Future Development
 

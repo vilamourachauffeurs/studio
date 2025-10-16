@@ -27,6 +27,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
@@ -106,6 +107,14 @@ export default function NewDriverPage() {
                 Fill out the form below to add a new driver to the system.
             </p>
         </div>
+      <Alert className="max-w-4xl mx-auto">
+        <AlertTitle>Note: Create User Account First</AlertTitle>
+        <AlertDescription>
+          With the new system, driver profiles are automatically created when you create a driver user account.
+          Go to Users → Add New User, select role "driver", and the driver profile will be created automatically.
+          Use this page only to update existing driver profiles.
+        </AlertDescription>
+      </Alert>
       <Card className="shadow-lg max-w-4xl mx-auto">
         <CardHeader>
             <CardTitle>Driver Details</CardTitle>
