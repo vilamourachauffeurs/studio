@@ -35,7 +35,7 @@ const handleNotificationFlow = ai.defineFlow(
     outputSchema: z.void(),
   },
   async (input) => {
-    // 1. Fetch the user's document to get their FCM tokens.
+    // 1. Fetch the user's document to get their FCM tokens and role.
     const userDocRef = firestore.collection('users').doc(input.recipientId);
     const userDoc = await userDocRef.get();
 
@@ -46,11 +46,10 @@ const handleNotificationFlow = ai.defineFlow(
 
     const userData = userDoc.data();
     const tokens = userData?.fcmTokens;
-    const userRole = userData?.role;
+    const userRole = userData?.role; // Get the user's role from their profile
 
     if (!tokens || !Array.isArray(tokens) || tokens.length === 0) {
-      console.log(`No FCM tokens found for user ${input.recipientId}.`);
-      // Do not proceed if there are no tokens.
+      console.log(`No FCM tokens found for user ${input.recipientId}. Notification will still be saved to Firestore.`);
     } else {
         // 2. Construct the FCM message payload.
         const payload = {
@@ -83,14 +82,14 @@ const handleNotificationFlow = ai.defineFlow(
 
     // 4. Store the notification details in the 'notifications' collection in Firestore.
     try {
-        await firestore.collection('notifications').add({ 
+        await firestore.collection('notifications').add({
             type: input.type,
             recipientId: input.recipientId,
-            recipientRole: userRole || 'driver', // This would need to be more dynamic in a real app
+            recipientRole: userRole || 'driver', // Use the fetched role
             message: input.message,
             bookingId: input.bookingId,
-            sentAt: Timestamp.now(), 
-            read: false
+            sentAt: Timestamp.now(),
+            read: false, // Default to unread
         });
     } catch (error) {
         console.error("Error saving notification to Firestore:", error);
