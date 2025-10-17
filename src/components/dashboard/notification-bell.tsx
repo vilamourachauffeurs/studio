@@ -61,16 +61,23 @@ export default function NotificationBell() {
   const { user } = useUser();
   const firestore = useFirestore();
 
+  // THE FIX: Removed orderBy('sentAt') to avoid needing a composite index.
+  // Sorting will be handled on the client-side.
   const notificationsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(
       collection(firestore, "notifications"),
-      where("recipientId", "==", user.uid),
-      orderBy("sentAt", "desc")
+      where("recipientId", "==", user.uid)
     );
   }, [user, firestore]);
 
   const { data: notifications, isLoading } = useCollection<Notification>(notificationsQuery);
+
+  // THE FIX: Sort the notifications on the client side after they are fetched.
+  const sortedNotifications = useMemo(() => {
+    if (!notifications) return [];
+    return [...notifications].sort((a, b) => b.sentAt.toDate().getTime() - a.sentAt.toDate().getTime());
+  }, [notifications]);
 
   const unreadCount = useMemo(() => {
     return notifications?.filter((n) => !n.read).length || 0;
@@ -127,11 +134,11 @@ export default function NotificationBell() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             )}
-            {!isLoading && notifications?.length === 0 && (
+            {!isLoading && sortedNotifications.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-8">No notifications yet.</p>
             )}
             <div className="space-y-1">
-              {notifications?.map((n) => (
+              {sortedNotifications.map((n) => (
                 <NotificationItem key={n.id} notification={n} onRead={handleMarkAsRead} />
               ))}
             </div>
