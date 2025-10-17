@@ -85,7 +85,7 @@ const handleNotificationFlow = ai.defineFlow(
         await firestore.collection('notifications').add({
             type: input.type,
             recipientId: input.recipientId,
-            recipientRole: userRole || 'driver', // Use the fetched role
+            recipientRole: userRole, // Use the fetched role
             message: input.message,
             bookingId: input.bookingId,
             sentAt: Timestamp.now(),
