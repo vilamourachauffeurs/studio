@@ -110,9 +110,7 @@ export type Notification = {
   bookingId: string;
   recipientRole: "admin" | "driver";
   recipientId: string;
-  status: "sent" | "delivered" | "read";
-  sentAt: Date;
+  read: boolean;
+  sentAt: Timestamp;
   message: string;
 };
-
-    

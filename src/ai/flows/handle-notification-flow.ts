@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getMessaging } from 'firebase-admin/messaging';
-import { firestore, adminApp } from '@/firebase/server';
+import { firestore } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
 
 
@@ -46,6 +46,7 @@ const handleNotificationFlow = ai.defineFlow(
 
     const userData = userDoc.data();
     const tokens = userData?.fcmTokens;
+    const userRole = userData?.role;
 
     if (!tokens || !Array.isArray(tokens) || tokens.length === 0) {
       console.log(`No FCM tokens found for user ${input.recipientId}.`);
@@ -62,7 +63,7 @@ const handleNotificationFlow = ai.defineFlow(
 
         // 3. Send the message using the firebase-admin SDK.
         try {
-            const response = await getMessaging(adminApp).sendMulticast(payload);
+            const response = await getMessaging().sendEachForMulticast(payload);
             console.log('Successfully sent message:', response);
             if (response.failureCount > 0) {
                 const failedTokens: string[] = [];
@@ -85,11 +86,11 @@ const handleNotificationFlow = ai.defineFlow(
         await firestore.collection('notifications').add({ 
             type: input.type,
             recipientId: input.recipientId,
-            recipientRole: 'driver', // This would need to be more dynamic in a real app
+            recipientRole: userRole || 'driver', // This would need to be more dynamic in a real app
             message: input.message,
             bookingId: input.bookingId,
             sentAt: Timestamp.now(), 
-            status: 'sent' 
+            read: false
         });
     } catch (error) {
         console.error("Error saving notification to Firestore:", error);

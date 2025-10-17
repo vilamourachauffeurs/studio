@@ -24,6 +24,7 @@ import { useUser, useAuth } from "@/firebase";
 import Logo from "../logo";
 import { MobileSheet } from "./sidebar";
 import { signOut } from "firebase/auth";
+import NotificationBell from "./notification-bell";
 
 
 export default function DashboardHeader() {
@@ -33,8 +34,10 @@ export default function DashboardHeader() {
   const pathname = usePathname();
 
   const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/");
+    if (auth) {
+      await signOut(auth);
+      router.push("/");
+    }
   };
 
 
@@ -68,10 +71,7 @@ export default function DashboardHeader() {
               className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
             />
         </div>
-        <Button variant="outline" size="icon" className="h-8 w-8">
-            <Bell className="h-4 w-4" />
-            <span className="sr-only">Toggle notifications</span>
-        </Button>
+        <NotificationBell />
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="overflow-hidden rounded-full h-8 w-8">
@@ -84,7 +84,7 @@ export default function DashboardHeader() {
             <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Settings</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
